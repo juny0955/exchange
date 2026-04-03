@@ -17,7 +17,7 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(CoreException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(CoreException e) {
+    public ResponseEntity<ErrorResponse> handleCoreException(CoreException e) {
         return ResponseEntity
             .status(HttpStatus.valueOf(e.errorCode().status()))
             .body(ErrorResponse.of(e.errorCode().code(), e.getMessage(), traceId()));
