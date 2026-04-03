@@ -1,5 +1,4 @@
 plugins {
-    java
     id("org.springframework.boot") version "4.0.5" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
@@ -16,10 +15,14 @@ allprojects {
 subprojects {
     apply(plugin = "java")
 
-    java {
+    configure<JavaPluginExtension> {
         toolchain {
             languageVersion.set(JavaLanguageVersion.of(25))
         }
+    }
+
+    tasks.withType<JavaCompile> {
+        options.encoding = "UTF-8"
     }
 
     tasks.withType<Test> {
