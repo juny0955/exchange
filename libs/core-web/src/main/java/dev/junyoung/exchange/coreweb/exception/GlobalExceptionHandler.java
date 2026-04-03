@@ -1,7 +1,7 @@
 package dev.junyoung.exchange.coreweb.exception;
 
 import dev.junyoung.exchange.core.exception.CoreException;
-import dev.junyoung.exchange.coreweb.web.TraceIdFilter;
+import dev.junyoung.exchange.coreweb.MdcKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
@@ -44,6 +44,6 @@ public class GlobalExceptionHandler {
     }
 
     private String traceId() {
-        return MDC.get(TraceIdFilter.traceIdKey());
+        return MDC.get(MdcKeys.TRACE_ID);
     }
 }

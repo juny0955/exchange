@@ -1,5 +1,6 @@
 package dev.junyoung.exchange.coreweb.web;
 
+import dev.junyoung.exchange.coreweb.MdcKeys;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,22 +20,15 @@ import java.util.UUID;
 @Component
 public class TraceIdFilter extends OncePerRequestFilter {
 
-    private static final String TRACE_ID_KEY = "traceId";
-    private static final String TRACE_ID_HEADER = "X-Trace-Id";
-
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String traceId = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
-        MDC.put(TRACE_ID_KEY, traceId);
-        response.setHeader(TRACE_ID_HEADER, traceId);
+        MDC.put(MdcKeys.TRACE_ID, traceId);
+        response.setHeader(MdcKeys.TRACE_ID_HEADER, traceId);
         try {
             filterChain.doFilter(request, response);
         } finally {
-            MDC.remove(TRACE_ID_KEY);
+            MDC.remove(MdcKeys.TRACE_ID);
         }
-    }
-
-    public static String traceIdKey() {
-        return TRACE_ID_KEY;
     }
 }
