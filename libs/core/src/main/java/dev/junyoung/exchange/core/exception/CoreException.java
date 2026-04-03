@@ -1,5 +1,7 @@
 package dev.junyoung.exchange.core.exception;
 
+import java.util.Objects;
+
 /**
  * 애플리케이션 전반에서 사용하는 공통 예외이다.
  *
@@ -20,7 +22,7 @@ public class CoreException extends RuntimeException {
      * @param errorCode 서비스별 에러 코드
      */
     public CoreException(ErrorCode errorCode) {
-        super(errorCode.message());
+        super(requireErrorCode(errorCode).message());
         this.errorCode = errorCode;
     }
 
@@ -32,7 +34,7 @@ public class CoreException extends RuntimeException {
      * @param errorCode 서비스별 에러 코드
      */
     public CoreException(ErrorCode errorCode, Throwable cause) {
-        super(errorCode.message(), cause);
+        super(requireErrorCode(errorCode).message(), cause);
         this.errorCode = errorCode;
     }
 
@@ -43,5 +45,9 @@ public class CoreException extends RuntimeException {
      */
     public ErrorCode errorCode() {
         return errorCode;
+    }
+
+    private static ErrorCode requireErrorCode(ErrorCode errorCode) {
+        return Objects.requireNonNull(errorCode, "errorCode는 null일 수 없습니다.");
     }
 }
