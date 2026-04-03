@@ -2,6 +2,7 @@ package dev.junyoung.exchange.coreweb.exception;
 
 import dev.junyoung.exchange.core.exception.CoreException;
 import dev.junyoung.exchange.coreweb.web.TraceIdFilter;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.List;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(CoreException.class)
@@ -35,6 +37,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception e) {
+        log.error("Unexpected error occurred", e);
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ErrorResponse.of("INTERNAL_ERROR", "Unexpected error occurred", traceId()));
