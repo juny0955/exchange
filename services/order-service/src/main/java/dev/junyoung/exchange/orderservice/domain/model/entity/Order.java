@@ -18,6 +18,7 @@ public record Order (
 	OrderId orderId,
 	AccountId accountId,
 	String clientOrderId,
+	long acceptedSeq,
 
 	Symbol symbol,
 	Side side,
@@ -49,6 +50,7 @@ public record Order (
 		OrderId orderId,
 		AccountId accountId,
 		String clientOrderId,
+		long acceptedSeq,
 		Symbol symbol,
 		Side side,
 		OrderType orderType,
@@ -63,6 +65,7 @@ public record Order (
 			orderId,
 			accountId,
 			clientOrderId,
+			acceptedSeq,
 			symbol,
 			side,
 			orderType,
@@ -83,6 +86,7 @@ public record Order (
 		if (orderId == null) throw new InvalidDomainException("주문 ID는 필수입니다.");
 		if (accountId == null) throw new InvalidDomainException("계좌 ID는 필수입니다.");
 		if (clientOrderId == null || clientOrderId.isBlank()) throw new InvalidDomainException("멱등 주문 ID는 필수입니다.");
+		if (acceptedSeq <= 0) throw new InvalidDomainException("접수 순번은 0보다 커야합니다.");
 		if (symbol == null) throw new InvalidDomainException("거래 심볼은 필수입니다.");
 		if (side == null) throw new InvalidDomainException("주문 방향(매수/매도)은 필수입니다.");
 		if (orderType == null) throw new InvalidDomainException("주문 유형은 필수입니다.");
