@@ -7,6 +7,7 @@ import dev.junyoung.exchange.orderservice.domain.model.enums.Side;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import dev.junyoung.exchange.orderservice.domain.model.value.Price;
 import dev.junyoung.exchange.orderservice.domain.model.value.Quantity;
+import dev.junyoung.exchange.orderservice.domain.model.value.QuoteQty;
 import dev.junyoung.exchange.orderservice.domain.model.value.Symbol;
 import dev.junyoung.exchange.orderservice.domain.model.value.TradeId;
 
@@ -18,6 +19,7 @@ public record Trade (
 	Side side,
 	Price price,
 	Quantity quantity,
+	QuoteQty quoteQty,
 	Instant tradeAt,
 	Instant createdAt
 ) {
@@ -30,6 +32,8 @@ public record Trade (
 		if (price == null) throw new InvalidDomainException("체결 가격은 필수입니다.");
 		if (quantity == null) throw new InvalidDomainException("체결 수량은 필수입니다.");
 		if (quantity.isZero()) throw new InvalidDomainException("체결 수량은 0보다 커야합니다.");
+		if (quoteQty == null) throw new InvalidDomainException("체결 금액은 필수입니다.");
+		if (quoteQty.isZero()) throw new InvalidDomainException("체결 금액은 0보다 커야합니다.");
 		if (tradeAt == null) throw new InvalidDomainException("체결 시점은 필수입니다.");
 	}
 }
