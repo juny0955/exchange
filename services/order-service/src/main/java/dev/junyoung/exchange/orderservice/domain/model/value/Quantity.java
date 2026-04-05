@@ -11,7 +11,15 @@ public record Quantity(
 		if (value == null)
 			throw new InvalidDomainException("주문 수량은 필수 입니다.");
 
-		if (value.signum() <= 0)
-			throw new InvalidDomainException("주문 수량은 0보다 커야합니다.");
+		if (value.signum() < 0)
+			throw new InvalidDomainException("주문 수량은 양수이어야 합니다.");
+	}
+
+	public static Quantity zero() {
+		return new Quantity(BigDecimal.ZERO);
+	}
+
+	public boolean isZero() {
+		return value.signum() == 0;
 	}
 }

@@ -2,6 +2,7 @@ package dev.junyoung.exchange.orderservice.domain.model.entity;
 
 import java.time.Instant;
 
+import dev.junyoung.exchange.core.exception.InvalidDomainException;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderType;
 import dev.junyoung.exchange.orderservice.domain.model.enums.Side;
@@ -36,4 +37,72 @@ public record Order (
 	Instant createdAt,		// 시스템 접수 시점
 	Instant updatedAt
 ) {
+	public Order {
+		if (orderId == null) throw new InvalidDomainException("주문 ID는 필수입니다.");
+		if (accountId == null) throw new InvalidDomainException("계좌 ID는 필수입니다.");
+		if (clientOrderId == null || clientOrderId.isBlank()) throw new InvalidDomainException("멱등 주문 ID는 필수입니다.");
+		if (symbol == null) throw new InvalidDomainException("거래 심볼은 필수입니다.");
+		if (side == null) throw new InvalidDomainException("주문 방향(매수/매도)은 필수입니다.");
+		if (orderType == null) throw new InvalidDomainException("주문 유형은 필수입니다.");
+		if (tif == null) throw new InvalidDomainException("주문 조건은 필수 입니다.");
+		if (orderedAt == null) throw new InvalidDomainException("주문 시점은 필수입니다.");
+
+		switch (orderType) {
+			case LIMIT -> {
+				if (price == null) throw new InvalidDomainException("지정가 주문에는 가격이 필수입니다.");
+				if (quantity == null) throw new InvalidDomainException("지정가 주문에는 수량이 필수입니다.");
+				if (quantity.isZero()) throw new InvalidDomainException("주문 수량은 0보다 커야합니다.");
+			}
+			case MARKET -> {
+				switch (side) {
+					case BUY -> {
+						if (quoteQty == null)
+							throw new InvalidDomainException("시장가 매수 주문에는 주문 금액이 필수입니다.");
+						if (quoteQty.isZero())
+							throw new InvalidDomainException("주문 금액은 0보다 커야합니다.");
+					}
+					case SELL -> {
+						if (quantity == null)
+							throw new InvalidDomainException("시장가 매도 주문에는 수량이 필수입니다.");
+						if (quantity.isZero())
+							throw new InvalidDomainException("주문 수량은 0보다 커야합니다.");
+					}
+				}
+			}
+		}
+	}
+
+	public static Order of(
+		OrderId orderId,
+		AccountId accountId,
+		String clientOrderId,
+		Symbol symbol,
+		Side side,
+		OrderType orderType,
+		TimeInForce tif,
+		Price price,
+		Quantity quantity,
+		QuoteQty quoteQty,
+		Instant orderedAt
+	) {
+		Instant now = Instant.now();
+		return new Order(
+			orderId,
+			accountId,
+			clientOrderId,
+			symbol,
+			side,
+			orderType,
+			tif,
+			price,
+			quantity,
+			quoteQty,
+			Quantity.zero(),
+			QuoteQty.zero(),
+			OrderStatus.NEW,
+			orderedAt,
+			now,
+			now
+		);
+	}
 }
