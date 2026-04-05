@@ -16,8 +16,16 @@ public record ErrorResponse(
         return new ErrorResponse(errorCode, message, traceId, Instant.now(), null);
     }
 
-    public static ErrorResponse ofValidation(String errorCode, String message, String traceId, List<FieldError> fieldErrors) {
-        return new ErrorResponse(errorCode, message, traceId, Instant.now(), fieldErrors);
+    public static ErrorResponse ofInvalidDomain(String message, String traceId) {
+        return new ErrorResponse("INVALID_DOMAIN", message, traceId, Instant.now(), null);
+    }
+
+    public static ErrorResponse ofValidation(String traceId, List<FieldError> fieldErrors) {
+        return new ErrorResponse("INVALID_REQUEST", "Validation failed", traceId, Instant.now(), fieldErrors);
+    }
+
+    public static ErrorResponse ofServerError(String traceId) {
+        return new ErrorResponse("INTERNAL_ERROR", "Unexpected error occurred", traceId, Instant.now(), null);
     }
 }
 

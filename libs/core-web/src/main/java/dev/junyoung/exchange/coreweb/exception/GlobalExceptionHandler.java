@@ -1,6 +1,7 @@
 package dev.junyoung.exchange.coreweb.exception;
 
 import dev.junyoung.exchange.core.exception.CoreException;
+import dev.junyoung.exchange.core.exception.InvalidDomainException;
 import dev.junyoung.exchange.coreweb.MdcKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -23,6 +24,13 @@ public class GlobalExceptionHandler {
             .body(ErrorResponse.of(e.errorCode().code(), e.getMessage(), traceId()));
     }
 
+    @ExceptionHandler(InvalidDomainException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidDomainException(InvalidDomainException e) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ErrorResponse.ofInvalidDomain(e.getMessage(), traceId()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
         List<ErrorResponse.FieldError> fieldErrors = e.getBindingResult().getFieldErrors().stream()
@@ -31,7 +39,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
-            .body(ErrorResponse.ofValidation("INVALID_REQUEST", "Validation failed", traceId(), fieldErrors));
+            .body(ErrorResponse.ofValidation(traceId(), fieldErrors));
     }
 
     @ExceptionHandler(Exception.class)
@@ -39,7 +47,7 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error occurred", e);
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(ErrorResponse.of("INTERNAL_ERROR", "Unexpected error occurred", traceId()));
+            .body(ErrorResponse.ofServerError(traceId()));
     }
 
     private String traceId() {
