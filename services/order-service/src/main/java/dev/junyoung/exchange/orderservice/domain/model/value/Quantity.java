@@ -9,7 +9,7 @@ public record Quantity(
 ) {
 	public Quantity {
 		if (value == null)
-			throw new InvalidDomainException("주문 수량은 필수 입니다.");
+			throw new InvalidDomainException("주문 수량은 필수입니다.");
 
 		if (value.signum() < 0)
 			throw new InvalidDomainException("주문 수량은 양수이어야 합니다.");

@@ -1,7 +1,7 @@
 package dev.junyoung.exchange.orderservice.domain.model.enums;
 
 public enum OrderStatus {
-	ACCEPTED,
+	PENDING,
 	NEW,
 	PARTIALLY_FILLED,
 	FILLED,

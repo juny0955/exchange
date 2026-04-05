@@ -8,10 +8,10 @@ public record Symbol(
 ) {
 	public Symbol {
 		if (baseAsset == null || baseAsset.isBlank())
-			throw new InvalidDomainException("기초 자산은 필수 입니다.");
+			throw new InvalidDomainException("기초 자산은 필수입니다.");
 
 		if (quoteAsset == null || quoteAsset.isBlank())
-			throw new InvalidDomainException("결제 자산은 필수 입니다.");
+			throw new InvalidDomainException("결제 자산은 필수입니다.");
 
 		baseAsset = baseAsset.toUpperCase();
 		quoteAsset = quoteAsset.toUpperCase();
