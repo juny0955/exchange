@@ -1,3 +1,12 @@
 spring:
   application:
     name: order-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:15432/order_db
+    driver-class-name: org.postgresql.Driver
+    username: exchange
+    password: exchange
+
+  jooq:
+    sql-dialect: POSTGRES
