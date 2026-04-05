@@ -7,6 +7,6 @@ public record TradeId(
 	UUID value
 ) {
 	public TradeId {
-		Objects.requireNonNull(value, "TradeId는 필수 입니다.");
+		Objects.requireNonNull(value, "체결 ID는 필수 입니다.");
 	}
 }
