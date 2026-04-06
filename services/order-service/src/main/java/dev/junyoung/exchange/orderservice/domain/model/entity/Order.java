@@ -1,6 +1,8 @@
 package dev.junyoung.exchange.orderservice.domain.model.entity;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Optional;
 
 import dev.junyoung.exchange.core.exception.InvalidDomainException;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
@@ -47,7 +49,6 @@ public record Order (
 	}
 
 	public static Order of(
-		OrderId orderId,
 		AccountId accountId,
 		String clientOrderId,
 		long acceptedSeq,
@@ -62,7 +63,7 @@ public record Order (
 	) {
 		Instant now = Instant.now();
 		return new Order(
-			orderId,
+			OrderId.newId(),
 			accountId,
 			clientOrderId,
 			acceptedSeq,
@@ -80,6 +81,18 @@ public record Order (
 			now,
 			now
 		);
+	}
+
+	public Optional<BigDecimal> getPriceValue() {
+		return Optional.ofNullable(price).map(Price::value);
+	}
+
+	public Optional<BigDecimal> getQuantityValue() {
+		return Optional.ofNullable(quantity).map(Quantity::value);
+	}
+
+	public Optional<BigDecimal> getQuoteValue() {
+		return Optional.ofNullable(quoteQty).map(QuoteQty::value);
 	}
 
 	private void validateCommonFields() {

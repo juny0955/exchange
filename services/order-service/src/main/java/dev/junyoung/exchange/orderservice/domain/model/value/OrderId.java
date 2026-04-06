@@ -11,4 +11,8 @@ public record OrderId(
 		if (value == null)
 			throw new InvalidDomainException("주문 ID는 필수 입니다.");
 	}
+
+    public static OrderId newId() {
+		return new OrderId(UUID.randomUUID());
+    }
 }

@@ -9,9 +9,7 @@ import dev.junyoung.exchange.orderservice.application.port.in.command.PlaceOrder
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderType;
 import dev.junyoung.exchange.orderservice.domain.model.enums.Side;
 import dev.junyoung.exchange.orderservice.domain.model.enums.TimeInForce;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 
 public record PlaceOrderRequest (
 
@@ -19,12 +17,15 @@ public record PlaceOrderRequest (
 	UUID accountId,
 
 	@NotBlank
+	@Size(max = 64)
 	String clientOrderId,
 
 	@NotBlank
+	@Size(max = 8)
 	String baseAsset,
 
 	@NotBlank
+	@Size(max = 8)
 	String quoteAsset,
 
 	@NotBlank
@@ -49,6 +50,7 @@ public record PlaceOrderRequest (
 	BigDecimal quoteQty,
 
 	@NotNull
+	@PastOrPresent
 	Instant orderedAt
 ) {
 	public PlaceOrderCommand toCommand() {
