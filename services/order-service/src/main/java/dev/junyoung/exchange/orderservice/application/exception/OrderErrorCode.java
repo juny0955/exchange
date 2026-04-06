@@ -6,7 +6,10 @@ import org.springframework.http.HttpStatus;
 
 @AllArgsConstructor
 public enum OrderErrorCode implements ErrorCode {
-    DUPLICATE_PLACE_ORDER(HttpStatus.CONFLICT, "ORDER-DUP-PLACE", "이미 처리된 주문입니다.")
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER-NOT-FOUND", "해당 주문을 찾을 수 없습니다."),
+    DUPLICATE_PLACE_ORDER(HttpStatus.CONFLICT, "ORDER-DUP-PLACE", "이미 처리된 주문입니다."),
+    ORDER_ALREADY_FINAL(HttpStatus.UNPROCESSABLE_CONTENT, "ORDER-ALREADY-FINAL", "이미 종료된 주문입니다."),
+    ORDER_ALREADY_REQ_CANCEL(HttpStatus.CONFLICT, "ORDER-ALREADY-REQ-CANCEL", "이미 취소 요청된 주문입니다."),
     ;
 
     private final HttpStatus status;

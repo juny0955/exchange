@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 
+import dev.junyoung.exchange.core.exception.CoreException;
 import dev.junyoung.exchange.core.exception.InvalidDomainException;
+import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderType;
 import dev.junyoung.exchange.orderservice.domain.model.enums.Side;
@@ -93,6 +95,30 @@ public record Order (
 
 	public Optional<BigDecimal> getQuoteValue() {
 		return Optional.ofNullable(quoteQty).map(QuoteQty::value);
+	}
+
+
+	public Order requestCancel() {
+		if (isFinal())
+			throw new CoreException(OrderErrorCode.ORDER_ALREADY_FINAL);
+
+		return null;
+	}
+
+	/**
+	 * 최종 상태 확인
+	 *
+	 * <p>
+	 *     해당 주문이
+	 *     {@link OrderStatus#FILLED} or {@link OrderStatus#CANCELED} or {@link OrderStatus#REJECTED}
+	 *     상태인지 체크한다.
+	 * </p>
+	 * @return 최종 상태 여부
+	 */
+	private boolean isFinal() {
+		return OrderStatus.FILLED.equals(status) ||
+			OrderStatus.CANCELED.equals(status) ||
+			OrderStatus.REJECTED.equals(status);
 	}
 
 	private void validateCommonFields() {

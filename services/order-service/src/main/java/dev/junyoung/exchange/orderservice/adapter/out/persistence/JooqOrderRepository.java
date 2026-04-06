@@ -4,10 +4,13 @@ import dev.junyoung.exchange.orderservice.Tables;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderRepository;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
+import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import dev.junyoung.exchange.orderservice.tables.records.OrdersRecord;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -38,5 +41,13 @@ public class JooqOrderRepository implements OrderRepository {
             .where(Tables.ORDERS.ACCOUNT_ID.eq(accountId.value()))
             .and(Tables.ORDERS.CLIENT_ORDER_ID.eq(clientOrderId))
         );
+    }
+
+    @Override
+    public Optional<Order> findByIdAndAccountId(OrderId orderId, AccountId accountId) {
+        return dslContext.selectFrom(Tables.ORDERS)
+            .where(Tables.ORDERS.ORDER_ID.eq(orderId.value()))
+            .and(Tables.ORDERS.ACCOUNT_ID.eq(accountId.value()))
+            .fetchOptionalInto(Order.class);
     }
 }

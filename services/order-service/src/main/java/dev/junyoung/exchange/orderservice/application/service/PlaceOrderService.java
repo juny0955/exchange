@@ -26,6 +26,8 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 		if (orderRepository.existsByAccountIdAndClientOrderId(command.accountId(), command.clientOrderId()))
 			throw new CoreException(OrderErrorCode.DUPLICATE_PLACE_ORDER);
 
+		// TODO account 잔고 검증/홀드 등
+
 		Order order = Order.of(
 			command.accountId(),
 			command.clientOrderId(),
@@ -41,6 +43,8 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 		);
 
 		orderRepository.save(order);
+
+		// TODO 매칭엔진 Submit
 		return order.orderId();
 	}
 }
