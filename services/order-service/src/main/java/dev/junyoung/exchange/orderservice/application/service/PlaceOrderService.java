@@ -3,6 +3,7 @@ package dev.junyoung.exchange.orderservice.application.service;
 import dev.junyoung.exchange.core.exception.CoreException;
 import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
 import dev.junyoung.exchange.orderservice.application.port.out.AcceptedSeqGenerator;
+import dev.junyoung.exchange.orderservice.application.port.out.OrderExecutionPort;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderRepository;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 
 	private final AcceptedSeqGenerator acceptedSeqGenerator;
 	private final OrderRepository orderRepository;
+	private final OrderExecutionPort orderExecutionPort;
 
 	@Override
 	public OrderId placeOrder(PlaceOrderCommand command) {
@@ -43,8 +45,8 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 		);
 
 		orderRepository.save(order);
+		orderExecutionPort.place(order);
 
-		// TODO 매칭엔진 Submit
 		return order.getOrderId();
 	}
 }

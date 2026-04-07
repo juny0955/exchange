@@ -4,6 +4,7 @@ import dev.junyoung.exchange.core.exception.CoreException;
 import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
 import dev.junyoung.exchange.orderservice.application.port.in.CancelOrderUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.command.CancelOrderCommand;
+import dev.junyoung.exchange.orderservice.application.port.out.OrderExecutionPort;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderRepository;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CancelOrderService implements CancelOrderUseCase {
 
     private final OrderRepository orderRepository;
+    private final OrderExecutionPort orderExecutionPort;
 
     @Override
     public void cancelOrder(CancelOrderCommand command) {
@@ -26,7 +28,6 @@ public class CancelOrderService implements CancelOrderUseCase {
         order.requestCancel();
 
         orderRepository.updateStatus(order);
-
-        // TODO 엔진 Submit
+        orderExecutionPort.cancel(order);
     }
 }
