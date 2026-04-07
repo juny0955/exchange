@@ -24,6 +24,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 	public OrderId placeOrder(PlaceOrderCommand command) {
 		Order order = placeOrderTx.persistPendingOrder(command);
 
+		// TODO 복구 트랜잭션 추가 필요
 		accountReservationPort.reserve(AccountReserveCommand.of(order));
 		engineExecutionPort.place(EnginePlaceCommand.of(order));
 
