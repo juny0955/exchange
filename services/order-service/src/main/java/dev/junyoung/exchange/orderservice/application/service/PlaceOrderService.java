@@ -45,6 +45,6 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 		orderRepository.save(order);
 
 		// TODO 매칭엔진 Submit
-		return order.orderId();
+		return order.getOrderId();
 	}
 }

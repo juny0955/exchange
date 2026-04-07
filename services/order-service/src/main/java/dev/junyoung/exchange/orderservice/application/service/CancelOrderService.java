@@ -20,9 +20,9 @@ public class CancelOrderService implements CancelOrderUseCase {
         Order order = orderRepository.findByIdAndAccountId(command.orderId(), command.accountId())
             .orElseThrow(() -> new CoreException(OrderErrorCode.ORDER_NOT_FOUND));
 
-        Order cancelPendingOrder = order.requestCancel();
+        order.requestCancel();
 
-        orderRepository.save(cancelPendingOrder);
+        orderRepository.save(order);
 
         // TODO 엔진 Submit
     }

@@ -4,9 +4,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 
-import dev.junyoung.exchange.core.exception.CoreException;
+import dev.junyoung.exchange.core.exception.ConflictDomainException;
 import dev.junyoung.exchange.core.exception.InvalidDomainException;
-import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderType;
 import dev.junyoung.exchange.orderservice.domain.model.enums.Side;
@@ -17,32 +16,71 @@ import dev.junyoung.exchange.orderservice.domain.model.value.Price;
 import dev.junyoung.exchange.orderservice.domain.model.value.Quantity;
 import dev.junyoung.exchange.orderservice.domain.model.value.QuoteQty;
 import dev.junyoung.exchange.orderservice.domain.model.value.Symbol;
+import lombok.Getter;
 
-public record Order (
-	OrderId orderId,
-	AccountId accountId,
-	String clientOrderId,
-	long acceptedSeq,
+@Getter
+public class Order {
 
-	Symbol symbol,
-	Side side,
-	OrderType orderType,
-	TimeInForce tif,
+	private final OrderId orderId;
+	private final AccountId accountId;
+	private final String clientOrderId;
+	private final long acceptedSeq;
 
-	Price price,
-	Quantity quantity,		// 수량 기준 (Base Asset)
-	QuoteQty quoteQty,		// 금액 기준 (Quote Asset) 시장가 매수용
+	private final Symbol symbol;
+	private final Side side;
+	private final OrderType orderType;
+	private final TimeInForce tif;
 
-	Quantity cumBaseQty, 	// 누적 체결 수량 (Base Asset)
-	QuoteQty cumQuoteQty, 	// 누적 체결 금액 (Quote Asset)
+	private final Price price;
+	private final Quantity quantity;		// 수량 기준 (Base Asset)
+	private final QuoteQty quoteQty;		// 금액 기준 (Quote Asset) 시장가 매수용
 
-	OrderStatus status,
+	private Quantity cumBaseQty; 		// 누적 체결 수량 (Base Asset)
+	private QuoteQty cumQuoteQty; 	// 누적 체결 금액 (Quote Asset)
 
-	Instant orderedAt,		// 사용자 주문 시점
-	Instant createdAt,		// 시스템 접수 시점
-	Instant updatedAt
-) {
-	public Order {
+	private OrderStatus status;
+
+	private final Instant orderedAt;		// 사용자 주문 시점
+	private final Instant createdAt;		// 시스템 접수 시점
+	private Instant updatedAt;
+
+	public Order(
+		OrderId orderId,
+		AccountId accountId,
+		String clientOrderId,
+		long acceptedSeq,
+		Symbol symbol,
+		Side side,
+		OrderType orderType,
+		TimeInForce tif,
+		Price price,
+		Quantity quantity,
+		QuoteQty quoteQty,
+		Quantity cumBaseQty,
+		QuoteQty cumQuoteQty,
+		OrderStatus status,
+		Instant orderedAt,
+		Instant createdAt,
+		Instant updatedAt
+	) {
+		this.orderId = orderId;
+		this.accountId = accountId;
+		this.clientOrderId = clientOrderId;
+		this.acceptedSeq = acceptedSeq;
+		this.symbol = symbol;
+		this.side = side;
+		this.orderType = orderType;
+		this.tif = tif;
+		this.price = price;
+		this.quantity = quantity;
+		this.quoteQty = quoteQty;
+		this.cumBaseQty = cumBaseQty;
+		this.cumQuoteQty = cumQuoteQty;
+		this.status = status;
+		this.orderedAt = orderedAt;
+		this.createdAt = createdAt;
+		this.updatedAt = updatedAt;
+
 		validateCommonFields();
 		switch (orderType) {
 			case LIMIT -> validateLimitOrder();
@@ -85,24 +123,30 @@ public record Order (
 		);
 	}
 
-	public Optional<BigDecimal> getPriceValue() {
+	public Optional<BigDecimal> getPrice() {
 		return Optional.ofNullable(price).map(Price::value);
 	}
 
-	public Optional<BigDecimal> getQuantityValue() {
+	public Optional<BigDecimal> getQuantity() {
 		return Optional.ofNullable(quantity).map(Quantity::value);
 	}
 
-	public Optional<BigDecimal> getQuoteValue() {
+	public Optional<BigDecimal> getQuoteQty() {
 		return Optional.ofNullable(quoteQty).map(QuoteQty::value);
 	}
 
+	/**
+	 *
+	 */
+	public void requestCancel() {
+		if (OrderStatus.CANCEL_PENDING.equals(status))
+			throw new ConflictDomainException("이미 취소 요청된 주문입니다.");
 
-	public Order requestCancel() {
 		if (isFinal())
-			throw new CoreException(OrderErrorCode.ORDER_ALREADY_FINAL);
+			throw new ConflictDomainException("이미 종료된 주문입니다.");
 
-		return null;
+		status = OrderStatus.CANCEL_PENDING;
+		updatedAt = Instant.now();
 	}
 
 	/**

@@ -10,24 +10,24 @@ public class JooqOrderMapper {
 
     static OrdersRecord toRecord(DSLContext dslContext, Order order) {
         OrdersRecord record = dslContext.newRecord(Tables.ORDERS);
-        record.setOrderId(order.orderId().value());
-        record.setAccountId(order.accountId().value());
-        record.setClientOrderId(order.clientOrderId());
-        record.setAcceptedSeq(order.acceptedSeq());
-        record.setBaseAsset(order.symbol().baseAsset());
-        record.setQuoteAsset(order.symbol().quoteAsset());
-        record.setSide(order.side().name());
-        record.setOrderType(order.orderType().name());
-        record.setTif(order.tif().name());
-        record.setStatus(order.status().name());
-        record.setPrice(order.getPriceValue().orElse(null));
-        record.setQuantity(order.getQuantityValue().orElse(null));
-        record.setQuoteQty(order.getQuoteValue().orElse(null));
-        record.setCumBaseQty(order.cumBaseQty().value());
-        record.setCumQuoteQty(order.cumQuoteQty().value());
-        record.setOrderedAt(order.orderedAt());
-        record.setCreatedAt(order.createdAt());
-        record.setUpdatedAt(order.updatedAt());
+        record.setOrderId(order.getOrderId().value());
+        record.setAccountId(order.getAccountId().value());
+        record.setClientOrderId(order.getClientOrderId());
+        record.setAcceptedSeq(order.getAcceptedSeq());
+        record.setBaseAsset(order.getSymbol().baseAsset());
+        record.setQuoteAsset(order.getSymbol().quoteAsset());
+        record.setSide(order.getSide().name());
+        record.setOrderType(order.getOrderType().name());
+        record.setTif(order.getTif().name());
+        record.setStatus(order.getStatus().name());
+        record.setPrice(order.getPrice().orElse(null));
+        record.setQuantity(order.getQuantity().orElse(null));
+        record.setQuoteQty(order.getQuoteQty().orElse(null));
+        record.setCumBaseQty(order.getCumBaseQty().value());
+        record.setCumQuoteQty(order.getCumQuoteQty().value());
+        record.setOrderedAt(order.getOrderedAt());
+        record.setCreatedAt(order.getCreatedAt());
+        record.setUpdatedAt(order.getUpdatedAt());
         return record;
     }
 }
