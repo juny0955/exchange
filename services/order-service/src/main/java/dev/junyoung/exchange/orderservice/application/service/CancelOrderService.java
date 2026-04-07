@@ -8,9 +8,11 @@ import dev.junyoung.exchange.orderservice.application.port.out.OrderRepository;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CancelOrderService implements CancelOrderUseCase {
 
     private final OrderRepository orderRepository;
@@ -20,9 +22,10 @@ public class CancelOrderService implements CancelOrderUseCase {
         Order order = orderRepository.findByIdAndAccountId(command.orderId(), command.accountId())
             .orElseThrow(() -> new CoreException(OrderErrorCode.ORDER_NOT_FOUND));
 
+        // TODO PENDING 상태일때 어떻게 처리할지 결정 해야함
         order.requestCancel();
 
-        orderRepository.save(order);
+        orderRepository.updateStatus(order);
 
         // TODO 엔진 Submit
     }

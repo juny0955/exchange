@@ -8,7 +8,8 @@ import java.util.Optional;
 
 public interface OrderRepository {
     void save(Order order);
-    boolean existsByAccountIdAndClientOrderId(AccountId accountId, String clientOrderId);
+    void updateStatus(Order order);
 
+    boolean existsByAccountIdAndClientOrderId(AccountId accountId, String clientOrderId);
     Optional<Order> findByIdAndAccountId(OrderId orderId, AccountId accountId);
 }

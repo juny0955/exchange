@@ -36,7 +36,7 @@ public class Order {
 	private final QuoteQty quoteQty;		// 금액 기준 (Quote Asset) 시장가 매수용
 
 	private Quantity cumBaseQty; 		// 누적 체결 수량 (Base Asset)
-	private QuoteQty cumQuoteQty; 	// 누적 체결 금액 (Quote Asset)
+	private QuoteQty cumQuoteQty; 		// 누적 체결 금액 (Quote Asset)
 
 	private OrderStatus status;
 
@@ -136,7 +136,15 @@ public class Order {
 	}
 
 	/**
+	 * 주문 취소를 요청한다.
 	 *
+	 * <p>
+	 *     주문 상태를 {@link OrderStatus#CANCEL_PENDING}으로 변경한다.
+	 *     실제 취소 확정은 매칭 엔진의 응답 이후 이루어진다.
+	 * </p>
+	 *
+	 * @throws ConflictDomainException 이미 취소 요청된 주문인 경우 ({@link OrderStatus#CANCEL_PENDING})
+	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
 	 */
 	public void requestCancel() {
 		if (OrderStatus.CANCEL_PENDING.equals(status))

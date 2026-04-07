@@ -24,12 +24,15 @@ public class JooqOrderRepository implements OrderRepository {
 
         dslContext.insertInto(Tables.ORDERS)
             .set(record)
-            .onConflict(Tables.ORDERS.ORDER_ID)
-            .doUpdate()
-            .set(Tables.ORDERS.STATUS, record.getStatus())
-            .set(Tables.ORDERS.CUM_BASE_QTY, record.getCumBaseQty())
-            .set(Tables.ORDERS.CUM_QUOTE_QTY, record.getCumQuoteQty())
-            .set(Tables.ORDERS.UPDATED_AT, record.getUpdatedAt())
+            .execute();
+    }
+
+    @Override
+    public void updateStatus(Order order) {
+        dslContext.update(Tables.ORDERS)
+            .set(Tables.ORDERS.STATUS, order.getStatus().name())
+            .set(Tables.ORDERS.UPDATED_AT, order.getUpdatedAt())
+            .where(Tables.ORDERS.ORDER_ID.eq(order.getOrderId().value()))
             .execute();
     }
 
