@@ -8,6 +8,7 @@ import dev.junyoung.exchange.orderservice.application.port.out.command.AccountRe
 import dev.junyoung.exchange.orderservice.application.port.out.command.EnginePlaceCommand;
 import dev.junyoung.exchange.orderservice.application.service.tx.PlaceOrderTx;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
+import dev.junyoung.exchange.orderservice.domain.model.enums.OrderHisReason;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -47,7 +48,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 		try {
 			accountReservationPort.reserve(AccountReserveCommand.of(order));
 		} catch (Exception e) { // TODO 에외 세분화 필요
-			placeOrderTx.rejectOrder(order);
+			placeOrderTx.rejectOrder(order, OrderHisReason.ACCOUNT_RESERVE_FAILED); // TODO detail 추가 필요
 			throw e;
 		}
 	}
@@ -61,7 +62,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 		try {
 			engineExecutionPort.place(EnginePlaceCommand.of(order));
 		} catch (Exception e) { // TODO 에외 세분화 필요
-			placeOrderTx.rejectOrder(order);
+			placeOrderTx.rejectOrder(order, OrderHisReason.ENGINE_REJECTED); // TODO detail 추가 필요
 			// TODO 잔고 홀드 해제 추가
 			throw e;
 		}
