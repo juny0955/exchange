@@ -37,3 +37,14 @@ CREATE TABLE trades (
 
     PRIMARY KEY (order_id, trade_id)
 );
+
+CREATE TABLE order_history (
+    order_history_id BIGSERIAL PRIMARY KEY,
+    order_id        UUID NOT NULL,
+    from_status     VARCHAR(32),
+    to_status       VARCHAR(32) NOT NULL,
+    reason          VARCHAR(32),
+    detail          TEXT,
+    created_at      TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX idx_order_id_created_at ON order_history (order_id, created_at);
