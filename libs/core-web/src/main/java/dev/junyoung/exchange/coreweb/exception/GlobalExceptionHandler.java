@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleConflictDomainException(InvalidDomainException e) {
         return ResponseEntity
             .status(HttpStatus.CONFLICT)
-            .body(ErrorResponse.ofInvalidDomain(e.getMessage(), traceId()));
+            .body(ErrorResponse.ofConflictDomain(e.getMessage(), traceId()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
