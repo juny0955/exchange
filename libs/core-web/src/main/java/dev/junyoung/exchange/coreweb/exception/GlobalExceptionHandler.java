@@ -1,5 +1,6 @@
 package dev.junyoung.exchange.coreweb.exception;
 
+import dev.junyoung.exchange.core.exception.ConflictDomainException;
 import dev.junyoung.exchange.core.exception.CoreException;
 import dev.junyoung.exchange.core.exception.InvalidDomainException;
 import dev.junyoung.exchange.coreweb.MdcKeys;
@@ -28,6 +29,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidDomainException(InvalidDomainException e) {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
+            .body(ErrorResponse.ofInvalidDomain(e.getMessage(), traceId()));
+    }
+
+    @ExceptionHandler(ConflictDomainException.class)
+    public ResponseEntity<ErrorResponse> handleConflictDomainException(InvalidDomainException e) {
+        return ResponseEntity
+            .status(HttpStatus.CONFLICT)
             .body(ErrorResponse.ofInvalidDomain(e.getMessage(), traceId()));
     }
 
