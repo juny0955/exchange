@@ -47,10 +47,13 @@ public class JooqOrderRepository implements OrderRepository {
     }
 
     @Override
-    public Optional<Order> findByIdAndAccountId(OrderId orderId, AccountId accountId) {
-        return dslContext.selectFrom(Tables.ORDERS)
-            .where(Tables.ORDERS.ORDER_ID.eq(orderId.value()))
-            .and(Tables.ORDERS.ACCOUNT_ID.eq(accountId.value()))
-            .fetchOptionalInto(Order.class);
+    public Optional<Order> findByIdAndAccountIdForUpdate(OrderId orderId, AccountId accountId) {
+        return Optional.ofNullable(
+            dslContext.selectFrom(Tables.ORDERS)
+                .where(Tables.ORDERS.ORDER_ID.eq(orderId.value()))
+                .and(Tables.ORDERS.ACCOUNT_ID.eq(accountId.value()))
+                .forUpdate()
+                .fetchOne(JooqOrderMapper::toDomain)
+        );
     }
 }

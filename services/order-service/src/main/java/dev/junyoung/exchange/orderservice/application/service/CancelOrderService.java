@@ -19,7 +19,7 @@ public class CancelOrderService implements CancelOrderUseCase {
 
     @Override
     public void cancelOrder(CancelOrderCommand command) {
-        Order order = orderRepository.findByIdAndAccountId(command.orderId(), command.accountId())
+        Order order = orderRepository.findByIdAndAccountIdForUpdate(command.orderId(), command.accountId())
             .orElseThrow(() -> new CoreException(OrderErrorCode.ORDER_NOT_FOUND));
 
         // TODO PENDING 상태일때 어떻게 처리할지 결정 해야함

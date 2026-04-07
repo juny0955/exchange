@@ -2,11 +2,38 @@ package dev.junyoung.exchange.orderservice.adapter.out.persistence;
 
 import dev.junyoung.exchange.orderservice.Tables;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
+import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
+import dev.junyoung.exchange.orderservice.domain.model.enums.OrderType;
+import dev.junyoung.exchange.orderservice.domain.model.enums.Side;
+import dev.junyoung.exchange.orderservice.domain.model.enums.TimeInForce;
+import dev.junyoung.exchange.orderservice.domain.model.value.*;
 import dev.junyoung.exchange.orderservice.tables.records.OrdersRecord;
 import org.jooq.DSLContext;
 
 public class JooqOrderMapper {
 
+
+    static Order toDomain(OrdersRecord record) {
+        return new Order(
+            new OrderId(record.getOrderId()),
+            new AccountId(record.getAccountId()),
+            record.getClientOrderId(),
+            record.getAcceptedSeq(),
+            new Symbol(record.getBaseAsset(), record.getQuoteAsset()),
+            Side.valueOf(record.getSide()),
+            OrderType.valueOf(record.getOrderType()),
+            TimeInForce.valueOf(record.getTif()),
+            record.getPrice() != null ? new Price(record.getPrice()) : null,
+            record.getQuantity() != null ? new Quantity(record.getQuantity()) : null,
+            record.getQuoteQty() != null ? new QuoteQty(record.getQuoteQty()) : null,
+            new Quantity(record.getCumBaseQty()),
+            new QuoteQty(record.getCumQuoteQty()),
+            OrderStatus.valueOf(record.getStatus()),
+            record.getOrderedAt(),
+            record.getCreatedAt(),
+            record.getUpdatedAt()
+        );
+    }
 
     static OrdersRecord toRecord(DSLContext dslContext, Order order) {
         OrdersRecord record = dslContext.newRecord(Tables.ORDERS);
