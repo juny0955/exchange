@@ -158,6 +158,23 @@ public class Order {
 	}
 
 	/**
+	 * 거부 상태로 변경한다.
+	 *
+	 * <p>
+	 *     주문 상태를 {@link OrderStatus#REJECTED}으로 변경한다.
+	 * </p>
+	 *
+	 * @throws ConflictDomainException 대기 상태가 아닌 경우 ({@link OrderStatus#PENDING})
+	 */
+	public void reject() {
+		if (!OrderStatus.PENDING.equals(status))
+			throw new ConflictDomainException("대기 상태 주문이 아닙니다.");
+
+		status = OrderStatus.REJECTED;
+		updatedAt = Instant.now();
+	}
+
+	/**
 	 * 최종 상태 확인
 	 *
 	 * <p>

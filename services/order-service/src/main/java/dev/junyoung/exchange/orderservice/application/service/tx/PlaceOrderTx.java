@@ -39,4 +39,9 @@ public class PlaceOrderTx {
         orderRepository.save(order);
         return order;
     }
+
+	public void rejectOrder(Order order) {
+        order.reject();
+        orderRepository.updateStatus(order);
+	}
 }
