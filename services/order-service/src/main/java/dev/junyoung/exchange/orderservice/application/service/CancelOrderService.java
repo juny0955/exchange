@@ -19,6 +19,15 @@ public class CancelOrderService implements CancelOrderUseCase {
     @Override
     public void cancelOrder(CancelOrderCommand command) {
         Order order = cancelOrderTx.cancelOrderTx(command);
-        engineExecutionPort.cancel(new EngineCancelCommand(order.getOrderId().value(), order.getAccountId().value()));
+        processEngineCancel(order);
+    }
+
+    private void processEngineCancel(Order order) {
+        try {
+            engineExecutionPort.cancel(new EngineCancelCommand(order.getOrderId().value(), order.getAccountId().value()));
+        } catch (Exception e) {
+            // TODO 주문 취소 실패시 어떻게 처리할지 결정 해야함
+            throw e;
+        }
     }
 }
