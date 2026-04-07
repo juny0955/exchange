@@ -2,7 +2,9 @@ package dev.junyoung.exchange.orderservice.application.service;
 
 import dev.junyoung.exchange.orderservice.application.port.in.PlaceOrderUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.command.PlaceOrderCommand;
+import dev.junyoung.exchange.orderservice.application.port.out.AccountReservationPort;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderExecutionPort;
+import dev.junyoung.exchange.orderservice.application.port.out.command.AccountReserveCommand;
 import dev.junyoung.exchange.orderservice.application.service.tx.PlaceOrderTx;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
@@ -13,14 +15,17 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PlaceOrderService implements PlaceOrderUseCase {
 
+	private final AccountReservationPort accountReservationPort;
 	private final PlaceOrderTx placeOrderTx;
 	private final OrderExecutionPort orderExecutionPort;
 
 	@Override
 	public OrderId placeOrder(PlaceOrderCommand command) {
-		// TODO account 잔고 검증/홀드 등
-		Order order = placeOrderTx.placeOrderTx(command);
+		Order order = placeOrderTx.persistPendingOrder(command);
+
+		accountReservationPort.reserve(AccountReserveCommand.of(order));
 		orderExecutionPort.place(order);
+
 		return order.getOrderId();
 	}
 }

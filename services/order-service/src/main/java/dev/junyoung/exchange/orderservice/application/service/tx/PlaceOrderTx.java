@@ -18,11 +18,11 @@ public class PlaceOrderTx {
     private final OrderRepository orderRepository;
     private final AcceptedSeqGenerator acceptedSeqGenerator;
 
-    public Order placeOrderTx(PlaceOrderCommand command) {
+    public Order persistPendingOrder(PlaceOrderCommand command) {
         if (orderRepository.existsByAccountIdAndClientOrderId(command.accountId(), command.clientOrderId()))
             throw new CoreException(OrderErrorCode.DUPLICATE_PLACE_ORDER);
 
-        Order order = Order.of(
+        Order order = Order.create(
             command.accountId(),
             command.clientOrderId(),
             acceptedSeqGenerator.next(),

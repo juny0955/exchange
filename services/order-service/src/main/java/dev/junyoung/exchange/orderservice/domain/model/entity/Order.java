@@ -88,7 +88,7 @@ public class Order {
 		}
 	}
 
-	public static Order of(
+	public static Order create(
 		AccountId accountId,
 		String clientOrderId,
 		long acceptedSeq,
