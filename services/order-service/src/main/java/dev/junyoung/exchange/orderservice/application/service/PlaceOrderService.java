@@ -3,8 +3,9 @@ package dev.junyoung.exchange.orderservice.application.service;
 import dev.junyoung.exchange.orderservice.application.port.in.PlaceOrderUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.command.PlaceOrderCommand;
 import dev.junyoung.exchange.orderservice.application.port.out.AccountReservationPort;
-import dev.junyoung.exchange.orderservice.application.port.out.OrderExecutionPort;
+import dev.junyoung.exchange.orderservice.application.port.out.EngineExecutionPort;
 import dev.junyoung.exchange.orderservice.application.port.out.command.AccountReserveCommand;
+import dev.junyoung.exchange.orderservice.application.port.out.command.EnginePlaceCommand;
 import dev.junyoung.exchange.orderservice.application.service.tx.PlaceOrderTx;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
@@ -17,14 +18,14 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 
 	private final AccountReservationPort accountReservationPort;
 	private final PlaceOrderTx placeOrderTx;
-	private final OrderExecutionPort orderExecutionPort;
+	private final EngineExecutionPort engineExecutionPort;
 
 	@Override
 	public OrderId placeOrder(PlaceOrderCommand command) {
 		Order order = placeOrderTx.persistPendingOrder(command);
 
 		accountReservationPort.reserve(AccountReserveCommand.of(order));
-		orderExecutionPort.place(order);
+		engineExecutionPort.place(EnginePlaceCommand.of(order));
 
 		return order.getOrderId();
 	}

@@ -1,0 +1,35 @@
+package dev.junyoung.exchange.orderservice.application.port.out.command;
+
+import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
+import dev.junyoung.exchange.orderservice.domain.model.enums.OrderType;
+import dev.junyoung.exchange.orderservice.domain.model.enums.Side;
+import dev.junyoung.exchange.orderservice.domain.model.enums.TimeInForce;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+public record EnginePlaceCommand(
+    UUID orderId,
+    UUID accountId,
+    String symbol,
+    Side side,
+    OrderType orderType,
+    TimeInForce tif,
+    BigDecimal price,
+    BigDecimal quantity,
+    BigDecimal quoteQty
+) {
+    public static EnginePlaceCommand of(Order order) {
+        return new EnginePlaceCommand(
+            order.getOrderId().value(),
+            order.getAccountId().value(),
+            order.getSymbol().getTicker(),
+            order.getSide(),
+            order.getOrderType(),
+            order.getTif(),
+            order.getPrice().orElse(null),
+            order.getQuantity().orElse(null),
+            order.getQuoteQty().orElse(null)
+        );
+    }
+}
