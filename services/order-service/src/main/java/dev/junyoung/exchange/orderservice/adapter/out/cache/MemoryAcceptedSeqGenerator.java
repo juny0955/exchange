@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+// TODO 분산환경 대응하여 구현체 변경 필요
 @Component
 public class MemoryAcceptedSeqGenerator implements AcceptedSeqGenerator {
 
