@@ -2,7 +2,7 @@ package dev.junyoung.exchange.orderservice.application.port.out.command;
 
 import java.util.UUID;
 
-public record EngineCancelCommand(
+public record CancelOrderEvent(
     UUID orderId,
     UUID accountId
 ) {

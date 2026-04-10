@@ -8,7 +8,7 @@ import dev.junyoung.exchange.orderservice.domain.model.enums.TimeInForce;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public record EnginePlaceCommand(
+public record PlaceOrderEvent(
     UUID orderId,
     UUID accountId,
     String symbol,
@@ -19,8 +19,8 @@ public record EnginePlaceCommand(
     BigDecimal quantity,
     BigDecimal quoteQty
 ) {
-    public static EnginePlaceCommand of(Order order) {
-        return new EnginePlaceCommand(
+    public static PlaceOrderEvent of(Order order) {
+        return new PlaceOrderEvent(
             order.getOrderId().value(),
             order.getAccountId().value(),
             order.getSymbol().getTicker(),
