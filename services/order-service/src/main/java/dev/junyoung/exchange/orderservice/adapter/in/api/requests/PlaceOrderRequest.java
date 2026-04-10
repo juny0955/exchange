@@ -5,12 +5,14 @@ import java.time.Instant;
 import java.util.UUID;
 
 import dev.junyoung.exchange.coreweb.validation.annotation.ValidEnum;
+import dev.junyoung.exchange.orderservice.adapter.in.api.validation.annotation.ValidPlaceOrder;
 import dev.junyoung.exchange.orderservice.application.port.in.command.PlaceOrderCommand;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderType;
 import dev.junyoung.exchange.orderservice.domain.model.enums.Side;
 import dev.junyoung.exchange.orderservice.domain.model.enums.TimeInForce;
 import jakarta.validation.constraints.*;
 
+@ValidPlaceOrder
 public record PlaceOrderRequest (
 
 	@NotNull

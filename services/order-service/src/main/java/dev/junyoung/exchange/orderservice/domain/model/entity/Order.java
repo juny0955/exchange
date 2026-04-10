@@ -212,12 +212,13 @@ public class Order {
 	private void validateMarketOrder() {
 		switch (side) {
 			case BUY -> {
-				if (quantity == null && quoteQty == null) throw new InvalidDomainException("시장가 매수 주문에는 금액 또는 수량이 필요합니다.");
-				if (quantity != null && quoteQty != null) throw new InvalidDomainException("시장가 매수 주문에는 금액과 수량을 동시에 지정할 수 없습니다.");
-				if (quoteQty != null && quoteQty.isZero()) throw new InvalidDomainException("주문 금액은 0보다 커야합니다.");
-				if (quantity != null && quantity.isZero()) throw new InvalidDomainException("주문 수량은 0보다 커야합니다.");
+				if (price != null) throw new InvalidDomainException("시장가 매수 주문에는 가격을 지정할 수 없습니다.");
+				if (quantity != null) throw new InvalidDomainException("시장가 매수 주문에는 수량을 지정할 수 없습니다.");
+				if (quoteQty == null) throw new InvalidDomainException("시장가 매수 주문에는 금액이 필수입니다.");
+				if (quoteQty.isZero()) throw new InvalidDomainException("주문 금액은 0보다 커야합니다.");
 			}
 			case SELL -> {
+				if (price != null) throw new InvalidDomainException("시장가 매도 주문에는 가격을 지정할 수 없습니다.");
 				if (quoteQty != null) throw new InvalidDomainException("시장가 매도 주문에는 금액을 지정할 수 없습니다.");
 				if (quantity == null) throw new InvalidDomainException("시장가 매도 주문에는 수량이 필수입니다.");
 				if (quantity.isZero()) throw new InvalidDomainException("주문 수량은 0보다 커야합니다.");
