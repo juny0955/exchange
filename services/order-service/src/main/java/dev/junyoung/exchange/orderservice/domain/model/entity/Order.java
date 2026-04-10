@@ -175,6 +175,15 @@ public class Order {
 	}
 
 	/**
+	 * 매수 주문 여부 확인
+	 *
+	 * @return 매수 주문 여부
+	 */
+	public boolean isBuy() {
+		return Side.BUY.equals(side);
+	}
+
+	/**
 	 * 최종 상태 확인
 	 *
 	 * <p>
