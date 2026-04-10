@@ -4,6 +4,7 @@ import dev.junyoung.exchange.orderservice.application.port.in.PlaceOrderUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.command.PlaceOrderCommand;
 import dev.junyoung.exchange.orderservice.application.port.out.AccountReservationPort;
 import dev.junyoung.exchange.orderservice.application.port.out.EngineExecutionPort;
+import dev.junyoung.exchange.orderservice.application.port.out.command.AccountReleaseCommand;
 import dev.junyoung.exchange.orderservice.application.port.out.command.AccountReserveCommand;
 import dev.junyoung.exchange.orderservice.application.port.out.command.EnginePlaceCommand;
 import dev.junyoung.exchange.orderservice.application.service.tx.PlaceOrderTx;
@@ -46,7 +47,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 	 */
 	private void processAccountReserve(Order order) {
 		try {
-			accountReservationPort.reserve(AccountReserveCommand.of(order));
+			accountReservationPort.reserve(AccountReserveCommand.from(order));
 		} catch (Exception e) { // TODO 에외 세분화 필요
 			placeOrderTx.rejectOrder(order, OrderHisReason.ACCOUNT_RESERVE_FAILED); // TODO detail 추가 필요
 			throw e;
@@ -63,7 +64,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 			engineExecutionPort.place(EnginePlaceCommand.of(order));
 		} catch (Exception e) { // TODO 에외 세분화 필요
 			placeOrderTx.rejectOrder(order, OrderHisReason.ENGINE_REJECTED); // TODO detail 추가 필요
-			// TODO 잔고 홀드 해제 추가
+			accountReservationPort.release(AccountReleaseCommand.from(order));
 			throw e;
 		}
 	}

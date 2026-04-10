@@ -18,7 +18,7 @@ public record AccountReserveCommand(
     BigDecimal quoteQty
 ) {
 
-    public static AccountReserveCommand of(Order order) {
+    public static AccountReserveCommand from(Order order) {
         return new AccountReserveCommand(
             order.getOrderId().value(),
             order.getAccountId().value(),
