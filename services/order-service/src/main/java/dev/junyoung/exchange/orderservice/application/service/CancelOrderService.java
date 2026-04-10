@@ -20,6 +20,6 @@ public class CancelOrderService implements CancelOrderUseCase {
     @Override
     public void cancelOrder(CancelOrderCommand command) {
         Order order = cancelOrderTx.cancelOrderTx(command);
-        orderEventPublisher.cancel(new CancelOrderEvent(order.getOrderId().value(), order.getAccountId().value()));
+        orderEventPublisher.cancelOrder(new CancelOrderEvent(order.getOrderId().value(), order.getAccountId().value()));
     }
 }

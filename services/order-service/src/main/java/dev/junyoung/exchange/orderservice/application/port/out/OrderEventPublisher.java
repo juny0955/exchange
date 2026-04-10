@@ -4,6 +4,6 @@ import dev.junyoung.exchange.orderservice.application.port.out.command.CancelOrd
 import dev.junyoung.exchange.orderservice.application.port.out.command.PlaceOrderEvent;
 
 public interface OrderEventPublisher {
-    void placeOrder(PlaceOrderEvent command);
-    void cancel(CancelOrderEvent command);
+    void placeOrder(PlaceOrderEvent event);
+    void cancelOrder(CancelOrderEvent event);
 }

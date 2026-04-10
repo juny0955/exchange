@@ -11,12 +11,12 @@ import org.springframework.stereotype.Component;
 public class MockOrderEventPublisher implements OrderEventPublisher {
 
     @Override
-    public void placeOrder(PlaceOrderEvent command) {
-        log.info("Order placed: {}", command);
+    public void placeOrder(PlaceOrderEvent event) {
+        log.info("Order placed: {}", event);
     }
 
     @Override
-    public void cancel(CancelOrderEvent command) {
-        log.info("Order cancelled: {}", command);
+    public void cancelOrder(CancelOrderEvent event) {
+        log.info("Order cancelled: {}", event);
     }
 }
