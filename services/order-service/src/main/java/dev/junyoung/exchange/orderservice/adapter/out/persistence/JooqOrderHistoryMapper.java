@@ -10,7 +10,6 @@ public final class JooqOrderHistoryMapper {
 
 	static OrderHistoryRecord toRecord(DSLContext dslContext, OrderHistory orderHistory) {
 		OrderHistoryRecord record = dslContext.newRecord(Tables.ORDER_HISTORY);
-		record.setOrderHistoryId(orderHistory.orderHistoryId());
 		record.setOrderId(orderHistory.orderId().value());
 		record.setFromStatus(orderHistory.fromStatus() != null ? orderHistory.fromStatus().name() : null);
 		record.setToStatus(orderHistory.toStatus().name());

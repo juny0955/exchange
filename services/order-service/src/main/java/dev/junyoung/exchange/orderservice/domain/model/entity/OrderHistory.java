@@ -29,7 +29,7 @@ public record OrderHistory(
 			orderId,
 			null,
 			OrderStatus.PENDING,
-			null,
+			OrderHisReason.INIT_ORDER,
 			null,
 			Instant.now()
 		);
