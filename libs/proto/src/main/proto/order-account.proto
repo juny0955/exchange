@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package exchange.order.account.v1;
+
+option java_package = "dev.junyoung.exchange.proto.account.v1";
+option java_multiple_files = true;
+
+import "google/protobuf/wrappers.proto";
+
+service AccountReservationService {
+  rpc Reserve(ReserveRequest) returns (ReserveResponse);
+  rpc Release(ReleaseRequest) returns (ReleaseResponse);
+}
+
+enum Side {
+  SIDE_UNSPECIFIED = 0;
+  SIDE_BUY = 1;
+  SIDE_SELL = 2;
+}
+
+message ReserveRequest {
+  string order_id = 1;
+  string account_id = 2;
+  string base_asset = 3;
+  string quote_asset = 4;
+  Side side = 5;
+  google.protobuf.StringValue price = 6;
+  google.protobuf.StringValue quantity = 7;
+  google.protobuf.StringValue quote_qty = 8;
+}
+
+message ReserveResponse {}
+
+message ReleaseRequest {
+  string account_id = 1;
+  string order_id = 2;
+}
+
+message ReleaseResponse {}
