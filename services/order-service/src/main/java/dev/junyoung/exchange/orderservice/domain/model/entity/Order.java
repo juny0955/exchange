@@ -175,6 +175,22 @@ public class Order {
 	}
 
 	/**
+	 * 활성 상태로 변경한다
+	 *
+	 * <p>
+	 *     주문 상태를 {@link OrderStatus#NEW}으로 변경한다.
+	 * </p>
+	 * @throws ConflictDomainException 대기 상태가 아닌 경우 ({@link OrderStatus#PENDING})
+	 */
+	public void accepted() {
+		if (!OrderStatus.PENDING.equals(status))
+			throw new ConflictDomainException("대기 상태 주문이 아닙니다.");
+
+		status = OrderStatus.NEW;
+		updatedAt = Instant.now();
+	}
+
+	/**
 	 * 매수 주문 여부 확인
 	 *
 	 * @return 매수 주문 여부
