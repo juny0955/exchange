@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class HandleEngineRejectedEventService implements HandleEngineRejectedEventUseCase {
+public class EngineRejectedEventHandler implements HandleEngineRejectedEventUseCase {
 
 	private final OrderRepository orderRepository;
 	private final OrderHistoryRepository orderHistoryRepository;

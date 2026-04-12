@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class HandleEngineAcceptedEventService implements HandleEngineAcceptedEventUseCase {
+public class EngineAcceptedEventHandler implements HandleEngineAcceptedEventUseCase {
 
 	private final OrderRepository orderRepository;
 	private final OrderHistoryRepository orderHistoryRepository;
