@@ -1,6 +1,7 @@
 package dev.junyoung.exchange.orderservice.application.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import dev.junyoung.exchange.core.exception.CoreException;
 import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class EngineRejectedEventHandler implements HandleEngineRejectedEventUseCase {
 
 	private final OrderRepository orderRepository;
