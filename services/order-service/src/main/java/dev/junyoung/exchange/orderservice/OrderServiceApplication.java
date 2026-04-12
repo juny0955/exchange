@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.grpc.client.ImportGrpcClients;
 import org.springframework.resilience.annotation.EnableResilientMethods;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "dev.junyoung.exchange")
 @ImportGrpcClients(basePackages = "dev.junyoung.exchange.proto.account.v1")
 @EnableResilientMethods
 public class OrderServiceApplication {

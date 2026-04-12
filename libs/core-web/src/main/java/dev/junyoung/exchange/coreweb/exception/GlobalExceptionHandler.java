@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ConflictDomainException.class)
-    public ResponseEntity<ErrorResponse> handleConflictDomainException(InvalidDomainException e) {
+    public ResponseEntity<ErrorResponse> handleConflictDomainException(ConflictDomainException e) {
         return ResponseEntity
             .status(HttpStatus.CONFLICT)
             .body(ErrorResponse.ofConflictDomain(e.getMessage(), traceId()));
