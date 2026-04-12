@@ -2,6 +2,9 @@ package dev.junyoung.exchange.orderservice.application.service;
 
 import org.springframework.stereotype.Service;
 
+import dev.junyoung.exchange.core.exception.CoreException;
+import dev.junyoung.exchange.orderservice.adapter.out.grpc.account.exception.AccountReservationFailedException;
+import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
 import dev.junyoung.exchange.orderservice.application.port.in.PlaceOrderUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.command.PlaceOrderCommand;
 import dev.junyoung.exchange.orderservice.application.port.out.AccountReservationPort;
@@ -39,9 +42,9 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 	private void processAccountReserve(Order order) {
 		try {
 			accountReservationPort.reserve(AccountReserveCommand.from(order));
-		} catch (Exception e) { // TODO 에외 세분화 필요
+		} catch (AccountReservationFailedException e) {
 			placeOrderTx.rejectOrder(order, OrderHisReason.ACCOUNT_RESERVE_FAILED); // TODO detail 추가 필요
-			throw e;
+			throw new CoreException(OrderErrorCode.ACCOUNT_RESERVE_FAILED);
 		}
 	}
 }
