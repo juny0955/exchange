@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -34,6 +35,15 @@ public class JooqOrderRepository implements OrderRepository {
             .set(Tables.ORDERS.UPDATED_AT, order.getUpdatedAt())
             .where(Tables.ORDERS.ORDER_ID.eq(order.getOrderId().value()))
             .execute();
+    }
+
+    @Override
+    public void updateAll(List<Order> orders) {
+        List<OrdersRecord> records = orders.stream()
+            .map(order -> JooqOrderMapper.toRecord(dslContext, order))
+            .toList();
+
+        dslContext.batchUpdate(records).execute();
     }
 
     @Override

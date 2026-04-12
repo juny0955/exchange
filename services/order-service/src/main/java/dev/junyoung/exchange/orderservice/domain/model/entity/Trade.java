@@ -36,4 +36,52 @@ public record Trade (
 		if (quoteQty.isZero()) throw new InvalidDomainException("체결 금액은 0보다 커야합니다.");
 		if (tradeAt == null) throw new InvalidDomainException("체결 시점은 필수입니다.");
 	}
+
+	public static Trade buyOf(
+		TradeId tradeId,
+		Symbol symbol,
+		OrderId orderId,
+		OrderId matchOrderId,
+		Price price,
+		Quantity quantity,
+		QuoteQty quoteQty,
+		Instant tradeAt
+	) {
+		return new Trade(
+			tradeId,
+			symbol,
+			orderId,
+			matchOrderId,
+			Side.BUY,
+			price,
+			quantity,
+			quoteQty,
+			tradeAt,
+			Instant.now()
+		);
+	}
+
+	public static Trade sellOf(
+		TradeId tradeId,
+		Symbol symbol,
+		OrderId orderId,
+		OrderId matchOrderId,
+		Price price,
+		Quantity quantity,
+		QuoteQty quoteQty,
+		Instant tradeAt
+	) {
+		return new Trade(
+			tradeId,
+			symbol,
+			orderId,
+			matchOrderId,
+			Side.SELL,
+			price,
+			quantity,
+			quoteQty,
+			tradeAt,
+			Instant.now()
+		);
+	}
 }

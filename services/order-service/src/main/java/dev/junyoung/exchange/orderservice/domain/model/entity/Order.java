@@ -191,6 +191,26 @@ public class Order {
 	}
 
 	/**
+	 * 체결 결과를 반영한다
+	 *
+	 * <p>
+	 *     누적 체결 수량 및 금액을 업데이트하고 완전 체결 여부에 따른 상태 전이 수행
+	 * </p>
+	 * @param baseQty 체결 수량
+	 * @param quoteQty 체결 금액
+	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
+	 */
+	public void fill(Quantity baseQty, QuoteQty quoteQty) {
+		if (isFinal())
+			throw new ConflictDomainException("이미 종료된 주문입니다.");
+
+		cumBaseQty = cumBaseQty.add(baseQty);
+		cumQuoteQty = cumQuoteQty.add(quoteQty);
+		updatedAt = Instant.now();
+		status = isFullyFilled() ? OrderStatus.FILLED : OrderStatus.PARTIALLY_FILLED;
+	}
+
+	/**
 	 * 매수 주문 여부 확인
 	 *
 	 * @return 매수 주문 여부
@@ -213,6 +233,24 @@ public class Order {
 		return OrderStatus.FILLED.equals(status) ||
 			OrderStatus.CANCELED.equals(status) ||
 			OrderStatus.REJECTED.equals(status);
+	}
+
+	/**
+	 * 완전 체결 여부 판단
+	 *
+	 * <p>
+	 *
+	 * </p>
+	 * @return 완전 체결 여부
+	 */
+	private boolean isFullyFilled() {
+		return switch (orderType) {
+			case LIMIT -> cumBaseQty.value().compareTo(quantity.value()) >= 0;
+			case MARKET -> switch (side) {
+				case BUY -> cumQuoteQty.value().compareTo(quoteQty.value()) >= 0;
+				case SELL -> cumBaseQty.value().compareTo(quantity.value()) >= 0;
+			};
+		};
 	}
 
 	private void validateCommonFields() {

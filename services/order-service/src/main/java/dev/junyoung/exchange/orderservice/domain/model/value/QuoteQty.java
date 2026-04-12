@@ -19,6 +19,10 @@ public record QuoteQty(
 		return new QuoteQty(BigDecimal.ZERO);
 	}
 
+	public QuoteQty add(QuoteQty quoteQty) {
+		return new QuoteQty(value.add(quoteQty.value));
+	}
+
 	public boolean isZero() {
 		return value.signum() == 0;
 	}

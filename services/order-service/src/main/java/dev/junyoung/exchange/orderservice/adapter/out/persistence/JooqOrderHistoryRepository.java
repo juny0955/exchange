@@ -1,5 +1,7 @@
 package dev.junyoung.exchange.orderservice.adapter.out.persistence;
 
+import java.util.List;
+
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
@@ -22,5 +24,14 @@ public class JooqOrderHistoryRepository implements OrderHistoryRepository {
 		dslContext.insertInto(Tables.ORDER_HISTORY)
 			.set(record)
 			.execute();
+	}
+
+	@Override
+	public void saveAll(List<OrderHistory> orderHistories) {
+		List<OrderHistoryRecord> records = orderHistories.stream()
+			.map(orderHistory -> JooqOrderHistoryMapper.toRecord(dslContext, orderHistory))
+			.toList();
+
+		dslContext.batchInsert(records).execute();
 	}
 }
