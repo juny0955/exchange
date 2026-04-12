@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface OrderRepository {
     void save(Order order);
     void updateStatus(Order order);
-    void updateAll(List<Order> orders);
+    void updateFill(List<Order> orders);
 
     boolean existsByAccountIdAndClientOrderId(AccountId accountId, String clientOrderId);
     Optional<Order> findByIdAndAccountIdForUpdate(OrderId orderId, AccountId accountId);

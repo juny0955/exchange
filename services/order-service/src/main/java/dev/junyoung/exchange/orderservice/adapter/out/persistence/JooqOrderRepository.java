@@ -38,9 +38,17 @@ public class JooqOrderRepository implements OrderRepository {
     }
 
     @Override
-    public void updateAll(List<Order> orders) {
+    public void updateFill(List<Order> orders) {
         List<OrdersRecord> records = orders.stream()
-            .map(order -> JooqOrderMapper.toRecord(dslContext, order))
+            .map(order -> {
+                OrdersRecord record = JooqOrderMapper.toRecord(dslContext, order);
+                record.changed(false);
+                record.changed(Tables.ORDERS.CUM_BASE_QTY, true);
+                record.changed(Tables.ORDERS.CUM_QUOTE_QTY, true);
+                record.changed(Tables.ORDERS.STATUS, true);
+                record.changed(Tables.ORDERS.UPDATED_AT, true);
+                return record;
+            })
             .toList();
 
         dslContext.batchUpdate(records).execute();

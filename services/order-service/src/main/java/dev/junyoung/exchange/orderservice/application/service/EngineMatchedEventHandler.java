@@ -49,7 +49,7 @@ public class EngineMatchedEventHandler implements HandleEngineMatchedEventUseCas
 		OrderHistory sellOrderHistory = OrderHistory.createTransition(sellOrder, sellOrderFromStatus, OrderHisReason.ENGINE_MATCHED);
 
 		tradeRepository.saveAll(List.of(buyTrade, sellTrade));
-		orderRepository.updateAll(List.of(buyOrder, sellOrder));
+		orderRepository.updateFill(List.of(buyOrder, sellOrder));
 		orderHistoryRepository.saveAll(List.of(buyOrderHistory, sellOrderHistory));
 	}
 }
