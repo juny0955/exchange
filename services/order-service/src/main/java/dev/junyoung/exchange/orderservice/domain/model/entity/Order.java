@@ -158,6 +158,27 @@ public class Order {
 	}
 
 	/**
+	 * 취소 상태로 변경한다
+	 *
+	 * <p>
+	 *     주문 상태를 {@link OrderStatus#CANCELED}으로 변경한다.
+	 * </p>
+	 *
+	 * @throws ConflictDomainException 취소 대기 주문이 아닌 경우 ({@link OrderStatus#CANCEL_PENDING})
+	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
+	 */
+	public void cancel() {
+		if (!OrderStatus.CANCEL_PENDING.equals(status))
+			throw new ConflictDomainException("취소 대기 주문이 아닙니다.");
+
+		if (isFinal())
+			throw new ConflictDomainException("이미 종료된 주문입니다.");
+
+		status = OrderStatus.CANCELED;
+		updatedAt = Instant.now();
+	}
+
+	/**
 	 * 거부 상태로 변경한다.
 	 *
 	 * <p>
