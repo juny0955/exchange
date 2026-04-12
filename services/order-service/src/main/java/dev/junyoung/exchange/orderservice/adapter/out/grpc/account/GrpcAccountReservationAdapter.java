@@ -1,4 +1,4 @@
-package dev.junyoung.exchange.orderservice.adapter.out.account;
+package dev.junyoung.exchange.orderservice.adapter.out.grpc.account;
 
 import java.time.Duration;
 import java.util.concurrent.locks.LockSupport;
