@@ -10,3 +10,9 @@ spring:
 
   jooq:
     sql-dialect: POSTGRES
+
+  grpc:
+    client:
+      default-channel:
+        address: static://localhost:9090 # mock
+        negotiation-type: plaintext
