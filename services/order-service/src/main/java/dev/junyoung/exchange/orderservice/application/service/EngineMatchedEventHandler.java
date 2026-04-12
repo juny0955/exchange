@@ -42,8 +42,8 @@ public class EngineMatchedEventHandler implements HandleEngineMatchedEventUseCas
 		buyOrder.fill(command.quantity(), command.quoteQty());
 		sellOrder.fill(command.quantity(), command.quoteQty());
 
-		Trade buyTrade = Trade.buyOf(command.tradeId(), command.symbol(), command.buyOrderId(), command.sellOrderId(), command.price(), command.quantity(), command.quoteQty(), command.tradeAt());
-		Trade sellTrade = Trade.sellOf(command.tradeId(), command.symbol(), command.sellOrderId(), command.buyOrderId(), command.price(), command.quantity(), command.quoteQty(), command.tradeAt());
+		Trade buyTrade = Trade.buyOf(command.tradeId(), buyOrder.getSymbol(), command.buyOrderId(), command.sellOrderId(), command.price(), command.quantity(), command.quoteQty(), command.tradeAt());
+		Trade sellTrade = Trade.sellOf(command.tradeId(), sellOrder.getSymbol(), command.sellOrderId(), command.buyOrderId(), command.price(), command.quantity(), command.quoteQty(), command.tradeAt());
 
 		OrderHistory buyOrderHistory = OrderHistory.createTransition(buyOrder, buyOrderFromStatus, OrderHisReason.ENGINE_MATCHED);
 		OrderHistory sellOrderHistory = OrderHistory.createTransition(sellOrder, sellOrderFromStatus, OrderHisReason.ENGINE_MATCHED);
