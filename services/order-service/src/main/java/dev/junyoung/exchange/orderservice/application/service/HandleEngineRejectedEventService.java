@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 
 import dev.junyoung.exchange.core.exception.CoreException;
 import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
-import dev.junyoung.exchange.orderservice.application.port.in.EngineRejectedEventUseCase;
+import dev.junyoung.exchange.orderservice.application.port.in.HandleEngineRejectedEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderHistoryRepository;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderRepository;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
@@ -17,13 +17,13 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class EngineRejectedEventService implements EngineRejectedEventUseCase {
+public class HandleEngineRejectedEventService implements HandleEngineRejectedEventUseCase {
 
 	private final OrderRepository orderRepository;
 	private final OrderHistoryRepository orderHistoryRepository;
 
 	@Override
-	public void rejected(OrderId orderId, AccountId accountId) {
+	public void handle(OrderId orderId, AccountId accountId) {
 		Order order = orderRepository.findByIdAndAccountIdForUpdate(orderId, accountId)
 			.orElseThrow(() -> new CoreException(OrderErrorCode.ORDER_NOT_FOUND));
 
