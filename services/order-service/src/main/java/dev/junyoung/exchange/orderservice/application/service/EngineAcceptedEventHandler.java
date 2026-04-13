@@ -33,6 +33,6 @@ public class EngineAcceptedEventHandler implements HandleEngineAcceptedEventUseC
 
 		order.accepted();
 		orderRepository.updateStatus(order);
-		orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.ENGINE_ACCEPTED)); // TODO detail 추가 필요
+		orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.ENGINE_ACCEPTED));
 	}
 }
