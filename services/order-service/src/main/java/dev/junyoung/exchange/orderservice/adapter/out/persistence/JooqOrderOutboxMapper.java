@@ -2,7 +2,6 @@ package dev.junyoung.exchange.orderservice.adapter.out.persistence;
 
 import org.jooq.DSLContext;
 import org.jooq.JSON;
-import org.jooq.JSONB;
 
 import dev.junyoung.exchange.orderservice.Tables;
 import dev.junyoung.exchange.orderservice.domain.model.entity.OrderOutbox;
