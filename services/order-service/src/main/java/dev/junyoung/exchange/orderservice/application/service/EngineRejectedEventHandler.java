@@ -32,7 +32,7 @@ public class EngineRejectedEventHandler implements HandleEngineRejectedEventUseC
 		OrderStatus fromStatus = order.getStatus();
 
 		order.reject();
-		orderRepository.save(order);
+		orderRepository.updateStatus(order);
 		orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.ENGINE_REJECTED)); // TODO detail 추가 필요
 	}
 }
