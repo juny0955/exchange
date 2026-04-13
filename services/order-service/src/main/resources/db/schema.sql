@@ -21,6 +21,7 @@ CREATE TABLE orders (
     CONSTRAINT uk_account_client_order UNIQUE (account_id, client_order_id),
     CONSTRAINT uk_accepted_seq UNIQUE (accepted_seq)
 );
+CREATE INDEX idx_order_account_id ON orders (order_id, account_id);
 
 CREATE TABLE trades (
     trade_id        UUID NOT NULL,
@@ -48,3 +49,15 @@ CREATE TABLE order_history (
     created_at      TIMESTAMPTZ NOT NULL
 );
 CREATE INDEX idx_order_id_created_at ON order_history (order_id, created_at);
+
+CREATE TABLE order_outbox (
+    outbox_id       UUID PRIMARY KEY,
+    order_id        UUID NOT NULL,
+    event_type      VARCHAR(32) NOT NULL,
+    payload         JSONB NOT NULL,
+    status          VARCHAR(32) NOT NULL,
+    retry_count     INT NOT NULL DEFAULT 0,
+    created_at      TIMESTAMPTZ NOT NULL,
+    published_at    TIMESTAMPTZ
+);
+
