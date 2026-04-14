@@ -33,7 +33,6 @@ public class CancelOrderService implements CancelOrderUseCase {
             .orElseThrow(() -> new CoreException(OrderErrorCode.ORDER_NOT_FOUND));
 
         OrderStatus fromStatus = order.getStatus();
-        // TODO PENDING 상태일때 어떻게 처리할지 결정 해야함
         order.requestCancel();
 
         orderRepository.updateStatus(order);
