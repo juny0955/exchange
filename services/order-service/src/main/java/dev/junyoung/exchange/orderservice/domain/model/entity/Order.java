@@ -297,11 +297,17 @@ public class Order {
 	}
 
 	/**
-	 * 완전 체결 여부 판단
+	 * 전량 체결 여부 판단
 	 *
-	 * <p>
-	 *
-	 * </p>
+	 * <ul>
+	 *     <li>{@link OrderType#LIMIT} 주문: {@link #cumBaseQty}가 주문 수량 이상일시 </li>
+	 *     <li>{@link OrderType#MARKET} 주문:
+	 *     		<ul>
+	 *     		 	<li>{@link Side#BUY} 주문: {@link #cumQuoteQty}가 주문 금액 이상일시</li>
+	 *     		 	<li>{@link Side#SELL} 주문: {@link #cumBaseQty}가 주문 수량 이상일시</li>
+	 *     		</ul>
+	 *     </li>
+	 * </ul>
 	 * @return 완전 체결 여부
 	 */
 	private boolean isFullyFilled() {
