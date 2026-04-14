@@ -22,6 +22,11 @@ public enum OrderStatus {
 	PARTIALLY_FILLED,
 
 	/**
+	 * 부분 체결 (취소 대기중)
+	 */
+	PARTIALLY_FILLED_CANCEL_PENDING,
+
+	/**
 	 * 전량 체결
 	 */
 	FILLED,

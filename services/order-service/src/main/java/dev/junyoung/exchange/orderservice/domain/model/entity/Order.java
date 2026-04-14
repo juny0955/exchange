@@ -154,9 +154,12 @@ public class Order {
 	/**
 	 * 주문 취소를 요청한다.
 	 *
-	 * <p>
-	 *     주문 상태를 {@link OrderStatus#CANCEL_PENDING}으로 변경한다.
-	 *     실제 취소 확정은 매칭 엔진의 응답 이후 이루어진다.
+	 * 현재 상태에 따라 주문 상태를 변경한다.
+	 * <ul>
+	 *     <li>{@link OrderStatus#NEW} -> {@link OrderStatus#CANCELED}</li>
+	 *     <li>{@link OrderStatus#PARTIALLY_FILLED} -> {@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING}</li>
+	 * </ul>
+	 * 실제 취소 확정은 매칭 엔진의 응답 이후 이루어진다.
 	 * </p>
 	 *
 	 * @throws ConflictDomainException 이미 취소 요청된 주문인 경우 ({@link OrderStatus#CANCEL_PENDING})
@@ -169,7 +172,7 @@ public class Order {
 		if (isFinal())
 			throw new ConflictDomainException("이미 종료된 주문입니다.");
 
-		status = OrderStatus.CANCEL_PENDING;
+		status = OrderStatus.PARTIALLY_FILLED.equals(status) ? OrderStatus.PARTIALLY_FILLED_CANCEL_PENDING : OrderStatus.CANCEL_PENDING;
 		updatedAt = Instant.now();
 	}
 
@@ -180,11 +183,11 @@ public class Order {
 	 *     주문 상태를 {@link OrderStatus#CANCELED}으로 변경한다.
 	 * </p>
 	 *
-	 * @throws ConflictDomainException 취소 대기 주문이 아닌 경우 ({@link OrderStatus#CANCEL_PENDING})
+	 * @throws ConflictDomainException 취소 대기 주문이 아닌 경우 ({@link OrderStatus#CANCEL_PENDING}), ({@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING})
 	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
 	 */
 	public void cancel() {
-		if (!OrderStatus.CANCEL_PENDING.equals(status))
+		if (!(OrderStatus.CANCEL_PENDING.equals(status) || OrderStatus.PARTIALLY_FILLED_CANCEL_PENDING.equals(status)))
 			throw new ConflictDomainException("취소 대기 주문이 아닙니다.");
 
 		if (isFinal())
@@ -233,6 +236,16 @@ public class Order {
 	 * <p>
 	 *     누적 체결 수량 및 금액을 업데이트하고 완전 체결 여부에 따른 상태 전이 수행
 	 * </p>
+	 *
+	 * <ul>
+	 *     <li>전량체결 -> {@link OrderStatus#FILLED}</li>
+	 *     <li>부분체결:
+	 *     		<ul>
+	 *        		<li>취소대기상태 -> {@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING}</li>
+	 *         		<li>일반 -> {@link OrderStatus#PARTIALLY_FILLED}</li>
+	 *     		</ul>
+	 *     </li>
+	 * </ul>
 	 * @param baseQty 체결 수량
 	 * @param quoteQty 체결 금액
 	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
@@ -244,7 +257,18 @@ public class Order {
 		cumBaseQty = cumBaseQty.add(baseQty);
 		cumQuoteQty = cumQuoteQty.add(quoteQty);
 		updatedAt = Instant.now();
-		status = isFullyFilled() ? OrderStatus.FILLED : OrderStatus.PARTIALLY_FILLED;
+
+		if (isFullyFilled()) {
+			status = OrderStatus.FILLED;
+			return;
+		}
+
+		if (isCancelPendingStatus()) {
+			status = OrderStatus.PARTIALLY_FILLED_CANCEL_PENDING;
+			return;
+		}
+
+		status = OrderStatus.PARTIALLY_FILLED;
 	}
 
 	/**
@@ -288,6 +312,20 @@ public class Order {
 				case SELL -> cumBaseQty.value().compareTo(quantity.value()) >= 0;
 			};
 		};
+	}
+
+	/**
+	 * 취소 대기 상태 여부 판단
+	 *
+	 * 해당 상태인 경우 True
+	 * <ul>
+	 *     <li>{@link OrderStatus#CANCEL_PENDING}</li>
+	 *     <li>{@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING}</li>
+	 * </ul>
+	 * @return 취소 대기 여부
+	 */
+	private boolean isCancelPendingStatus() {
+		return OrderStatus.CANCEL_PENDING.equals(status) || OrderStatus.PARTIALLY_FILLED_CANCEL_PENDING.equals(status);
 	}
 
 	private void validateCommonFields() {
