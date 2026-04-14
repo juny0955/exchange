@@ -162,11 +162,11 @@ public class Order {
 	 * 실제 취소 확정은 매칭 엔진의 응답 이후 이루어진다.
 	 * </p>
 	 *
-	 * @throws ConflictDomainException 이미 취소 요청된 주문인 경우 ({@link OrderStatus#CANCEL_PENDING})
+	 * @throws ConflictDomainException 이미 취소 요청된 주문인 경우 ({@link OrderStatus#CANCEL_PENDING}, {@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING})
 	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
 	 */
 	public void requestCancel() {
-		if (OrderStatus.CANCEL_PENDING.equals(status))
+		if (isCancelPendingStatus())
 			throw new ConflictDomainException("이미 취소 요청된 주문입니다.");
 
 		if (isFinal())
@@ -184,14 +184,10 @@ public class Order {
 	 * </p>
 	 *
 	 * @throws ConflictDomainException 취소 대기 주문이 아닌 경우 ({@link OrderStatus#CANCEL_PENDING}), ({@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING})
-	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
 	 */
 	public void cancel() {
-		if (!(OrderStatus.CANCEL_PENDING.equals(status) || OrderStatus.PARTIALLY_FILLED_CANCEL_PENDING.equals(status)))
+		if (!isCancelPendingStatus())
 			throw new ConflictDomainException("취소 대기 주문이 아닙니다.");
-
-		if (isFinal())
-			throw new ConflictDomainException("이미 종료된 주문입니다.");
 
 		status = OrderStatus.CANCELED;
 		updatedAt = Instant.now();
@@ -204,11 +200,11 @@ public class Order {
 	 *     주문 상태를 {@link OrderStatus#REJECTED}으로 변경한다.
 	 * </p>
 	 *
-	 * @throws ConflictDomainException 엔진 접수 요청 상태가 아닌 경우 ({@link OrderStatus#SUBMITTED})
+	 * @throws ConflictDomainException 활성 상태인 경우 ({@link OrderStatus#NEW}) 이상
 	 */
 	public void reject() {
-		if (!OrderStatus.SUBMITTED.equals(status))
-			throw new ConflictDomainException("엔진 접수 요청 상태 주문이 아닙니다.");
+		if (isActiveStatus())
+			throw new ConflictDomainException("이미 활성화된 주문입니다.");
 
 		status = OrderStatus.REJECTED;
 		updatedAt = Instant.now();
@@ -294,9 +290,10 @@ public class Order {
 	 * @return 최종 상태 여부
 	 */
 	private boolean isFinal() {
-		return OrderStatus.FILLED.equals(status) ||
-			OrderStatus.CANCELED.equals(status) ||
-			OrderStatus.REJECTED.equals(status);
+		return switch (status) {
+			case FILLED, CANCELED, REJECTED -> true;
+			default -> false;
+		};
 	}
 
 	/**
@@ -324,6 +321,21 @@ public class Order {
 	}
 
 	/**
+	 * 활성 상태 여부 판단
+	 *
+	 * <p>
+	 *     {@link OrderStatus#NEW}이상 상태인지 확인
+	 * </p>
+	 * @return 활성 상태 여부
+	 */
+	private boolean isActiveStatus() {
+		return switch (status) {
+			case RECEIVED, SUBMITTED -> false;
+			default -> true;
+		};
+	}
+
+	/**
 	 * 취소 대기 상태 여부 판단
 	 *
 	 * 해당 상태인 경우 True
@@ -334,7 +346,10 @@ public class Order {
 	 * @return 취소 대기 여부
 	 */
 	private boolean isCancelPendingStatus() {
-		return OrderStatus.CANCEL_PENDING.equals(status) || OrderStatus.PARTIALLY_FILLED_CANCEL_PENDING.equals(status);
+		return switch (status) {
+			case CANCEL_PENDING, PARTIALLY_FILLED_CANCEL_PENDING -> true;
+			default -> false;
+		};
 	}
 
 	private void validateCommonFields() {
