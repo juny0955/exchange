@@ -162,10 +162,14 @@ public class Order {
 	 * 실제 취소 확정은 매칭 엔진의 응답 이후 이루어진다.
 	 * </p>
 	 *
+	 * @throws ConflictDomainException 취소 요청 가능한 상태가 아닐 경우 ({@link OrderStatus#RECEIVED})
 	 * @throws ConflictDomainException 이미 취소 요청된 주문인 경우 ({@link OrderStatus#CANCEL_PENDING}, {@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING})
 	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
 	 */
 	public void requestCancel() {
+		if (OrderStatus.RECEIVED.equals(status))
+			throw new ConflictDomainException("취소 요청 가능한 상태가 아닙니다.");
+
 		if (isCancelPendingStatus())
 			throw new ConflictDomainException("이미 취소 요청된 주문입니다.");
 
