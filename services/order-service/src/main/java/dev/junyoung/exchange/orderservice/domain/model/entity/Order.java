@@ -156,7 +156,7 @@ public class Order {
 	 *
 	 * 현재 상태에 따라 주문 상태를 변경한다.
 	 * <ul>
-	 *     <li>{@link OrderStatus#NEW} -> {@link OrderStatus#CANCELED}</li>
+	 *     <li>{@link OrderStatus#NEW} -> {@link OrderStatus#CANCEL_PENDING}</li>
 	 *     <li>{@link OrderStatus#PARTIALLY_FILLED} -> {@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING}</li>
 	 * </ul>
 	 * 실제 취소 확정은 매칭 엔진의 응답 이후 이루어진다.
