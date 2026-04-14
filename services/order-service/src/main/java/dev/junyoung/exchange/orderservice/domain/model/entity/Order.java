@@ -248,9 +248,12 @@ public class Order {
 	 * </ul>
 	 * @param baseQty 체결 수량
 	 * @param quoteQty 체결 금액
+	 * @throws ConflictDomainException 체결 가능 상태가 아닌 경우 ({@link OrderStatus#RECEIVED}, {@link OrderStatus#SUBMITTED})
 	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
 	 */
 	public void fill(Quantity baseQty, QuoteQty quoteQty) {
+		if (OrderStatus.RECEIVED.equals(status) || OrderStatus.SUBMITTED.equals(status))
+			throw new ConflictDomainException("체결 가능한 주문 상태가 아닙니다.");
 		if (isFinal())
 			throw new ConflictDomainException("이미 종료된 주문입니다.");
 
