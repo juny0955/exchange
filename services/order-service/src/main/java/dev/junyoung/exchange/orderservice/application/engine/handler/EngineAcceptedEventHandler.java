@@ -30,8 +30,8 @@ public class EngineAcceptedEventHandler implements HandleEngineAcceptedEventUseC
 
 		OrderStatus fromStatus = order.getStatus();
 
-		// CANCEL_PENDING 상태일시 상태 변경 하지않고 이력만 남김
-		if (!OrderStatus.CANCEL_PENDING.equals(fromStatus)) {
+		// 취소 대기 상태일시 상태 변경 하지않고 이력만 남김
+		if (!order.isCancelPendingStatus()) {
 			order.accepted();
 			orderRepository.updateStatus(order);
 		}

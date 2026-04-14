@@ -284,6 +284,23 @@ public class Order {
 	}
 
 	/**
+	 * 취소 대기 상태 여부 판단
+	 *
+	 * 해당 상태인 경우 True
+	 * <ul>
+	 *     <li>{@link OrderStatus#CANCEL_PENDING}</li>
+	 *     <li>{@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING}</li>
+	 * </ul>
+	 * @return 취소 대기 여부
+	 */
+	public boolean isCancelPendingStatus() {
+		return switch (status) {
+			case CANCEL_PENDING, PARTIALLY_FILLED_CANCEL_PENDING -> true;
+			default -> false;
+		};
+	}
+
+	/**
 	 * 최종 상태 확인
 	 *
 	 * <p>
@@ -336,23 +353,6 @@ public class Order {
 		return switch (status) {
 			case RECEIVED, SUBMITTED -> false;
 			default -> true;
-		};
-	}
-
-	/**
-	 * 취소 대기 상태 여부 판단
-	 *
-	 * 해당 상태인 경우 True
-	 * <ul>
-	 *     <li>{@link OrderStatus#CANCEL_PENDING}</li>
-	 *     <li>{@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING}</li>
-	 * </ul>
-	 * @return 취소 대기 여부
-	 */
-	private boolean isCancelPendingStatus() {
-		return switch (status) {
-			case CANCEL_PENDING, PARTIALLY_FILLED_CANCEL_PENDING -> true;
-			default -> false;
 		};
 	}
 
