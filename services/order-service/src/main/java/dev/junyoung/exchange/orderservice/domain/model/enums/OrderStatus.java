@@ -4,7 +4,12 @@ public enum OrderStatus {
 	/**
 	 * 주문 접수
 	 */
-	PENDING,
+	RECEIVED,
+
+	/**
+	 * 엔진 접수 요청
+	 */
+	SUBMITTED,
 
 	/**
 	 * 활성화 (엔진 진입)

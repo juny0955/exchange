@@ -28,7 +28,7 @@ public record OrderHistory(
 			null,
 			orderId,
 			null,
-			OrderStatus.PENDING,
+			OrderStatus.RECEIVED,
 			OrderHisReason.INIT_ORDER,
 			null,
 			Instant.now()

@@ -62,5 +62,8 @@ public class PlaceOrderTx {
 	public void saveOutbox(Order order) {
         OrderOutbox orderOutbox = orderOutboxFactory.placeOrder(order);
         orderOutboxRepository.save(orderOutbox);
+
+        order.submitted();
+        orderRepository.updateStatus(order);
 	}
 }

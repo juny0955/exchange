@@ -116,7 +116,7 @@ public class Order {
 			quoteQty,
 			Quantity.zero(),
 			QuoteQty.zero(),
-			OrderStatus.PENDING,
+			OrderStatus.RECEIVED,
 			orderedAt,
 			now,
 			now
@@ -133,6 +133,22 @@ public class Order {
 
 	public Optional<BigDecimal> getQuoteQty() {
 		return Optional.ofNullable(quoteQty).map(QuoteQty::value);
+	}
+
+	/**
+	 * 주문을 엔진 접수 대기 상태로 변경한다.
+	 *
+	 * <p>
+	 *     주문 상태를 {@link OrderStatus#SUBMITTED}으로 변경한다.
+	 * </p>
+	 * @throws ConflictDomainException 주문 접수 상태가 아닌 경우 ({@link OrderStatus#RECEIVED})
+	 */
+	public void submitted() {
+		if (!OrderStatus.RECEIVED.equals(status))
+			throw new ConflictDomainException("접수 상태 주문이 아닙니다.");
+
+		status = OrderStatus.SUBMITTED;
+		updatedAt = Instant.now();
 	}
 
 	/**
@@ -185,11 +201,11 @@ public class Order {
 	 *     주문 상태를 {@link OrderStatus#REJECTED}으로 변경한다.
 	 * </p>
 	 *
-	 * @throws ConflictDomainException 대기 상태가 아닌 경우 ({@link OrderStatus#PENDING})
+	 * @throws ConflictDomainException 엔진 접수 요청 상태가 아닌 경우 ({@link OrderStatus#SUBMITTED})
 	 */
 	public void reject() {
-		if (!OrderStatus.PENDING.equals(status))
-			throw new ConflictDomainException("대기 상태 주문이 아닙니다.");
+		if (!OrderStatus.SUBMITTED.equals(status))
+			throw new ConflictDomainException("엔진 접수 요청 상태 주문이 아닙니다.");
 
 		status = OrderStatus.REJECTED;
 		updatedAt = Instant.now();
@@ -201,11 +217,11 @@ public class Order {
 	 * <p>
 	 *     주문 상태를 {@link OrderStatus#NEW}으로 변경한다.
 	 * </p>
-	 * @throws ConflictDomainException 대기 상태가 아닌 경우 ({@link OrderStatus#PENDING})
+	 * @throws ConflictDomainException 엔진 접수 요청 상태가 아닌 경우 ({@link OrderStatus#SUBMITTED})
 	 */
 	public void accepted() {
-		if (!OrderStatus.PENDING.equals(status))
-			throw new ConflictDomainException("대기 상태 주문이 아닙니다.");
+		if (!OrderStatus.SUBMITTED.equals(status))
+			throw new ConflictDomainException("엔진 접수 요청 상태 주문이 아닙니다.");
 
 		status = OrderStatus.NEW;
 		updatedAt = Instant.now();
