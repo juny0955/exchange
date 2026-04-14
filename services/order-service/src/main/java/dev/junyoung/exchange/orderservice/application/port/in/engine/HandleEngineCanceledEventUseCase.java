@@ -1,8 +1,8 @@
-package dev.junyoung.exchange.orderservice.application.port.in;
+package dev.junyoung.exchange.orderservice.application.port.in.engine;
 
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 
-public interface HandleEngineRejectedEventUseCase {
+public interface HandleEngineCanceledEventUseCase {
 	void handle(OrderId orderId, AccountId accountId);
 }

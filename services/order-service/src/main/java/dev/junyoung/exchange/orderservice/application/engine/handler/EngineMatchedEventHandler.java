@@ -1,4 +1,4 @@
-package dev.junyoung.exchange.orderservice.application.service;
+package dev.junyoung.exchange.orderservice.application.engine.handler;
 
 import java.util.List;
 
@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import dev.junyoung.exchange.core.exception.CoreException;
 import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
-import dev.junyoung.exchange.orderservice.application.port.in.HandleEngineMatchedEventUseCase;
+import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineMatchedEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.command.EngineMatchedCommand;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderHistoryRepository;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderRepository;
