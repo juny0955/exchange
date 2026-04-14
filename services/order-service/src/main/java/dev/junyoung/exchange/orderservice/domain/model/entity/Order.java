@@ -116,7 +116,7 @@ public class Order {
 			quoteQty,
 			Quantity.zero(),
 			QuoteQty.zero(),
-			OrderStatus.RECEIVED,
+			OrderStatus.PENDING,
 			orderedAt,
 			now,
 			now
@@ -136,22 +136,6 @@ public class Order {
 	}
 
 	/**
-	 * 주문을 엔진 접수 대기 상태로 변경한다.
-	 *
-	 * <p>
-	 *     주문 상태를 {@link OrderStatus#SUBMITTED}으로 변경한다.
-	 * </p>
-	 * @throws ConflictDomainException 주문 접수 상태가 아닌 경우 ({@link OrderStatus#RECEIVED})
-	 */
-	public void submitted() {
-		if (!OrderStatus.RECEIVED.equals(status))
-			throw new ConflictDomainException("접수 상태 주문이 아닙니다.");
-
-		status = OrderStatus.SUBMITTED;
-		updatedAt = Instant.now();
-	}
-
-	/**
 	 * 주문 취소를 요청한다.
 	 *
 	 * 현재 상태에 따라 주문 상태를 변경한다.
@@ -162,12 +146,12 @@ public class Order {
 	 * 실제 취소 확정은 매칭 엔진의 응답 이후 이루어진다.
 	 * </p>
 	 *
-	 * @throws ConflictDomainException 취소 요청 가능한 상태가 아닐 경우 ({@link OrderStatus#RECEIVED})
+	 * @throws ConflictDomainException 취소 요청 가능한 상태가 아닐 경우 ({@link OrderStatus#PENDING})
 	 * @throws ConflictDomainException 이미 취소 요청된 주문인 경우 ({@link OrderStatus#CANCEL_PENDING}, {@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING})
 	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
 	 */
 	public void requestCancel() {
-		if (OrderStatus.RECEIVED.equals(status))
+		if (OrderStatus.PENDING.equals(status))
 			throw new ConflictDomainException("취소 요청 가능한 상태가 아닙니다.");
 
 		if (isCancelPendingStatus())
@@ -204,11 +188,11 @@ public class Order {
 	 *     주문 상태를 {@link OrderStatus#REJECTED}으로 변경한다.
 	 * </p>
 	 *
-	 * @throws ConflictDomainException 활성 상태인 경우 ({@link OrderStatus#NEW}) 이상
+	 * @throws ConflictDomainException 대기 상태가 아닌 경우 ({@link OrderStatus#PENDING})
 	 */
 	public void reject() {
-		if (isActiveStatus())
-			throw new ConflictDomainException("이미 활성화된 주문입니다.");
+		if (!OrderStatus.PENDING.equals(status))
+			throw new ConflictDomainException("대기 상태 주문이 아닙니다.");
 
 		status = OrderStatus.REJECTED;
 		updatedAt = Instant.now();
@@ -220,11 +204,11 @@ public class Order {
 	 * <p>
 	 *     주문 상태를 {@link OrderStatus#NEW}으로 변경한다.
 	 * </p>
-	 * @throws ConflictDomainException 엔진 접수 요청 상태가 아닌 경우 ({@link OrderStatus#SUBMITTED})
+	 * @throws ConflictDomainException 대기 상태 주문이 아닌 경우 ({@link OrderStatus#PENDING})
 	 */
 	public void accepted() {
-		if (!OrderStatus.SUBMITTED.equals(status))
-			throw new ConflictDomainException("엔진 접수 요청 상태 주문이 아닙니다.");
+		if (!OrderStatus.PENDING.equals(status))
+			throw new ConflictDomainException("대기 상태 주문이 아닙니다.");
 
 		status = OrderStatus.NEW;
 		updatedAt = Instant.now();
@@ -248,11 +232,11 @@ public class Order {
 	 * </ul>
 	 * @param baseQty 체결 수량
 	 * @param quoteQty 체결 금액
-	 * @throws ConflictDomainException 체결 가능 상태가 아닌 경우 ({@link OrderStatus#RECEIVED}, {@link OrderStatus#SUBMITTED})
+	 * @throws ConflictDomainException 체결 가능 상태가 아닌 경우 ({@link OrderStatus#PENDING})
 	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
 	 */
 	public void fill(Quantity baseQty, QuoteQty quoteQty) {
-		if (OrderStatus.RECEIVED.equals(status) || OrderStatus.SUBMITTED.equals(status))
+		if (OrderStatus.PENDING.equals(status))
 			throw new ConflictDomainException("체결 가능한 주문 상태가 아닙니다.");
 		if (isFinal())
 			throw new ConflictDomainException("이미 종료된 주문입니다.");
@@ -338,21 +322,6 @@ public class Order {
 				case BUY -> cumQuoteQty.value().compareTo(quoteQty.value()) >= 0;
 				case SELL -> cumBaseQty.value().compareTo(quantity.value()) >= 0;
 			};
-		};
-	}
-
-	/**
-	 * 활성 상태 여부 판단
-	 *
-	 * <p>
-	 *     {@link OrderStatus#NEW}이상 상태인지 확인
-	 * </p>
-	 * @return 활성 상태 여부
-	 */
-	private boolean isActiveStatus() {
-		return switch (status) {
-			case RECEIVED, SUBMITTED -> false;
-			default -> true;
 		};
 	}
 

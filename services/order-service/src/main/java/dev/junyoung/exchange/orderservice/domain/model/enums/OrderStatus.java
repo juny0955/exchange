@@ -2,14 +2,9 @@ package dev.junyoung.exchange.orderservice.domain.model.enums;
 
 public enum OrderStatus {
 	/**
-	 * 주문 접수
+	 * 처리 대기 (엔진 진입 전)
 	 */
-	RECEIVED,
-
-	/**
-	 * 엔진 접수 요청
-	 */
-	SUBMITTED,
+	PENDING,
 
 	/**
 	 * 활성화 (엔진 진입)
