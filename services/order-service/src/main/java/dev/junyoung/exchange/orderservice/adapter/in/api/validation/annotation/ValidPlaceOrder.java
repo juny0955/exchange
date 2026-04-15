@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 
 import dev.junyoung.exchange.orderservice.adapter.in.api.validation.PlaceOrderValidator;
 import jakarta.validation.Constraint;
+import jakarta.validation.Payload;
 
 /**
  * 주문 요청 Request를 검증한다
@@ -42,5 +43,5 @@ import jakarta.validation.Constraint;
 public @interface ValidPlaceOrder {
 	String message() default "Invalid order";
 	Class<?>[] groups() default {};
-	Class<?>[] payload() default {};
+	Class<? extends Payload>[] payload() default {};
 }
