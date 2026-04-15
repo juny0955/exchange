@@ -5,21 +5,49 @@ include:
 
 services:
   kafka:
-    image: apache/kafka:latest
+    image: apache/kafka:4.0.2
     container_name: kafka
+    restart: always
     ports:
       - 9092:9092
     environment:
+      # 이 노드의 고유 ID (클러스터 내에서 브로커를 식별)
       - KAFKA_NODE_ID=1
+
+      # 이 노드의 역할: broker(메시지 저장/전달) + controller(클러스터 메타데이터 관리)
+      # KRaft 모드에서는 Zookeeper 없이 controller가 그 역할을 대신함
       - KAFKA_PROCESS_ROLES=broker,controller
-      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+
+      # Kafka가 실제로 열어두는 포트 목록
+      #   PLAINTEXT://:9092  → 호스트 머신의 앱이 접속하는 포트
+      #   CONTROLLER://:9093 → 컨트롤러 내부 통신 포트 (리더 선출 등)
+      #   INTERNAL://:19092  → 다른 컨테이너가 접속하는 포트
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,INTERNAL://:19092
+
+      # 클라이언트에게 알려주는 접속 주소 ("나한테 오려면 이 주소로 와")
+      #   PLAINTEXT://localhost:9092 → 호스트 앱(Spring Boot 등)이 사용
+      #   INTERNAL://kafka:19092     → 같은 Docker 네트워크의 컨테이너가 사용
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,INTERNAL://kafka:19092
+
+      # 컨트롤러 통신에 사용할 리스너 이름 지정 (LISTENERS에서 정의한 이름 중 하나)
       - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
+
+      # 각 리스너 이름에 보안 프로토콜을 매핑 (개발 환경이라 전부 암호화 없는 PLAINTEXT)
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+
+      # KRaft 클러스터의 투표 참여자 목록: "노드ID@호스트:포트" 형식
+      # 단일 노드라 1개만 지정, localhost 대신 컨테이너 이름(kafka) 사용
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+
+      # 브로커 간 내부 통신에 사용할 리스너 (멀티 브로커 환경에서 중요)
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+
+      # 내부 시스템 토픽의 복제본 수 (운영: 3, 단일 노드 개발: 반드시 1)
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+
+      # 컨슈머 그룹 첫 구성 시 리밸런싱 대기 시간 (개발: 0으로 즉시 시작)
       - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
     healthcheck:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
