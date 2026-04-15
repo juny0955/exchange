@@ -1,50 +1,56 @@
 package dev.junyoung.exchange.orderservice.application.service;
 
-import org.springframework.stereotype.Service;
-
 import dev.junyoung.exchange.core.exception.CoreException;
-import dev.junyoung.exchange.orderservice.adapter.out.grpc.account.exception.AccountReservationFailedException;
 import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
 import dev.junyoung.exchange.orderservice.application.port.in.PlaceOrderUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.command.PlaceOrderCommand;
-import dev.junyoung.exchange.orderservice.application.port.out.AccountReservationPort;
-import dev.junyoung.exchange.orderservice.application.port.out.command.AccountReserveCommand;
-import dev.junyoung.exchange.orderservice.application.service.tx.PlaceOrderTx;
+import dev.junyoung.exchange.orderservice.application.port.out.AcceptedSeqGenerator;
+import dev.junyoung.exchange.orderservice.application.port.out.OrderHistoryRepository;
+import dev.junyoung.exchange.orderservice.application.port.out.OrderOutboxRepository;
+import dev.junyoung.exchange.orderservice.application.port.out.OrderRepository;
+import dev.junyoung.exchange.orderservice.application.service.outbox.OrderOutboxFactory;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
-import dev.junyoung.exchange.orderservice.domain.model.enums.OrderHisReason;
+import dev.junyoung.exchange.orderservice.domain.model.entity.OrderHistory;
+import dev.junyoung.exchange.orderservice.domain.model.entity.OrderOutbox;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class PlaceOrderService implements PlaceOrderUseCase {
 
-	private final PlaceOrderTx placeOrderTx;
-	private final AccountReservationPort accountReservationPort;
+	private final AcceptedSeqGenerator acceptedSeqGenerator;
+	private final OrderRepository orderRepository;
+	private final OrderHistoryRepository orderHistoryRepository;
+	private final OrderOutboxFactory orderOutboxFactory;
+	private final OrderOutboxRepository orderOutboxRepository;
 
 	@Override
 	public OrderId placeOrder(PlaceOrderCommand command) {
-		Order order = placeOrderTx.persistPendingOrder(command);
-		processAccountReserve(order);
-		placeOrderTx.saveOutbox(order); // TODO outbox 저장 실패하면?
-		return order.getOrderId();
-	}
+		if (orderRepository.existsByAccountIdAndClientOrderId(command.accountId(), command.clientOrderId()))
+			throw new CoreException(OrderErrorCode.DUPLICATE_PLACE_ORDER);
 
-	/**
-	 * 잔고 검증 / 홀드를 진행한다
-	 *
-	 * <p>
-	 *     실패시 주문 상태를 REJECTED로 변경 후 예외 응답
-	 * </p>
-	 *
-	 * @param order 해당 주문
-	 */
-	private void processAccountReserve(Order order) {
-		try {
-			accountReservationPort.reserve(AccountReserveCommand.from(order));
-		} catch (AccountReservationFailedException e) {
-			placeOrderTx.rejectOrder(order, OrderHisReason.ACCOUNT_RESERVE_FAILED); // TODO detail 추가 필요
-			throw new CoreException(OrderErrorCode.ACCOUNT_RESERVE_FAILED);
-		}
+		Order order = Order.create(
+			command.accountId(),
+			command.clientOrderId(),
+			acceptedSeqGenerator.next(),
+			command.symbol(),
+			command.side(),
+			command.orderType(),
+			command.tif(),
+			command.price(),
+			command.quantity(),
+			command.quoteQty(),
+			command.orderedAt()
+		);
+
+		orderRepository.save(order);
+		orderHistoryRepository.save(OrderHistory.init(order.getOrderId()));
+		OrderOutbox orderOutbox = orderOutboxFactory.placeOrder(order);
+		orderOutboxRepository.save(orderOutbox);
+		return order.getOrderId();
 	}
 }

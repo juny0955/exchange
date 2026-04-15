@@ -7,7 +7,7 @@ import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
  * <h1>주문 접수 서비스</h1>
  *
  * <p>
- *     Order 선저장 (PENDING) -> Account 잔고 검증 / 홀드 -> Matching Engine 주문 접수 순서로 동작
+ *     Order 및 Outbox 저장 -> 잔고 점증 및
  * </p>
  */
 public interface PlaceOrderUseCase {
