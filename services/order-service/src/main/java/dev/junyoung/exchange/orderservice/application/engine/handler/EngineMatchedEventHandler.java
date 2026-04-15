@@ -1,6 +1,5 @@
 package dev.junyoung.exchange.orderservice.application.engine.handler;
 
-import dev.junyoung.exchange.orderservice.application.exception.OrderNotFoundException;
 import dev.junyoung.exchange.orderservice.application.port.in.command.EngineMatchedCommand;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineMatchedEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderHistoryRepository;
@@ -11,11 +10,15 @@ import dev.junyoung.exchange.orderservice.domain.model.entity.OrderHistory;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Trade;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderHisReason;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
+import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,11 +31,13 @@ public class EngineMatchedEventHandler implements HandleEngineMatchedEventUseCas
 
 	@Override
 	public void handle(EngineMatchedCommand command) {
-		Order buyOrder = orderRepository.findByIdAndAccountIdForUpdate(command.buyOrderId(), command.buyAccountId())
-			.orElseThrow(OrderNotFoundException::new);
+		List<Order> orders = orderRepository.findAllByIdForUpdate(List.of(command.buyOrderId(), command.sellOrderId()));
 
-		Order sellOrder = orderRepository.findByIdAndAccountIdForUpdate(command.sellOrderId(), command.sellAccountId())
-			.orElseThrow(OrderNotFoundException::new);
+		Map<OrderId, Order> orderMap = orders.stream()
+			.collect(Collectors.toMap(Order::getOrderId, Function.identity()));
+
+		Order buyOrder = orderMap.get(command.buyOrderId());
+		Order sellOrder = orderMap.get(command.sellOrderId());
 
 		OrderStatus buyOrderFromStatus = buyOrder.getStatus();
 		OrderStatus sellOrderFromStatus = sellOrder.getStatus();

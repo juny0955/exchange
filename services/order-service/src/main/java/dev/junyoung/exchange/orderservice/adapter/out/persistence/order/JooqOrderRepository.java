@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
@@ -21,10 +22,8 @@ public class JooqOrderRepository implements OrderRepository {
 
     @Override
     public void save(Order order) {
-        OrdersRecord record = JooqOrderMapper.toRecord(dslContext, order);
-
         dslContext.insertInto(Tables.ORDERS)
-            .set(record)
+            .set(JooqOrderMapper.toRecord(dslContext, order))
             .execute();
     }
 
@@ -73,5 +72,18 @@ public class JooqOrderRepository implements OrderRepository {
                 .forUpdate()
                 .fetchOne(JooqOrderMapper::toDomain)
         );
+    }
+
+    @Override
+    public List<Order> findAllByIdForUpdate(List<OrderId> orderIds) {
+        List<UUID> ids = orderIds.stream()
+            .map(OrderId::value)
+            .toList();
+
+        return dslContext.selectFrom(Tables.ORDERS)
+            .where(Tables.ORDERS.ORDER_ID.in(ids))
+            .orderBy(Tables.ORDERS.ORDER_ID.asc())
+            .forUpdate()
+            .fetch(JooqOrderMapper::toDomain);
     }
 }

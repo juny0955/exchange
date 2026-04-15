@@ -15,4 +15,5 @@ public interface OrderRepository {
 
     boolean existsByAccountIdAndClientOrderId(AccountId accountId, String clientOrderId);
     Optional<Order> findByIdAndAccountIdForUpdate(OrderId orderId, AccountId accountId);
+    List<Order> findAllByIdForUpdate(List<OrderId> orderIds);
 }
