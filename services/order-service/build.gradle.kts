@@ -16,7 +16,7 @@ val jooqGeneratedDir = layout.buildDirectory.dir("generated-src/jooq/main")
 
 dependencies {
     implementation(project(":libs:core-web"))
-    implementation(project(":libs:proto"))
+    implementation(project(":libs:proto")) // NOTE: 현재 grpc 사용하지않지만 추후 사용 가능있기에 남겨둠
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.grpc:spring-grpc-client-spring-boot-starter")
 
