@@ -13,6 +13,7 @@ public final class JooqOrderOutboxMapper {
 		OrderOutboxRecord record = dslContext.newRecord(Tables.ORDER_OUTBOX);
 		record.setOutboxId(orderOutbox.getOutboxId().value());
 		record.setOrderId(orderOutbox.getOrderId().value());
+		record.setEventType(orderOutbox.getType().name());
 		record.setPayload(JSON.json(orderOutbox.getPayload()));
 		record.setStatus(orderOutbox.getStatus().name());
 		record.setRetryCount(orderOutbox.getRetryCount());
