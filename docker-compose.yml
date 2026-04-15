@@ -22,9 +22,9 @@ services:
       - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
       - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
     networks:
-      - exchange-network
+      - kafka-network
 
 networks:
-  exchange-network:
-    name: exchange-network
+  kafka-network:
+    name: kafka-network
     driver: bridge
