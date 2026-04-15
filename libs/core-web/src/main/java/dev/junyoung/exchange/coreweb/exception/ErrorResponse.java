@@ -16,15 +16,11 @@ public record ErrorResponse(
         return new ErrorResponse(errorCode, message, traceId, Instant.now(), null);
     }
 
-    public static ErrorResponse ofInvalidDomain(String message, String traceId) {
-        return new ErrorResponse("INVALID_DOMAIN", message, traceId, Instant.now(), null);
-    }
-
     public static ErrorResponse ofConflictDomain(String message, String traceId) {
         return new ErrorResponse("CONFLICT_DOMAIN", message, traceId, Instant.now(), null);
     }
 
-    public static ErrorResponse ofValidation(String traceId, List<FieldError> fieldErrors) {
+    public static ErrorResponse ofValidation(List<FieldError> fieldErrors, String traceId) {
         return new ErrorResponse("INVALID_REQUEST", "Validation failed", traceId, Instant.now(), fieldErrors);
     }
 
