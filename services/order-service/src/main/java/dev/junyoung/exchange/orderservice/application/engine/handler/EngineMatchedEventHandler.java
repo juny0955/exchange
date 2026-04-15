@@ -1,14 +1,8 @@
 package dev.junyoung.exchange.orderservice.application.engine.handler;
 
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import dev.junyoung.exchange.core.exception.CoreException;
-import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
-import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineMatchedEventUseCase;
+import dev.junyoung.exchange.orderservice.application.exception.OrderNotFoundException;
 import dev.junyoung.exchange.orderservice.application.port.in.command.EngineMatchedCommand;
+import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineMatchedEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderHistoryRepository;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderRepository;
 import dev.junyoung.exchange.orderservice.application.port.out.TradeRepository;
@@ -18,6 +12,10 @@ import dev.junyoung.exchange.orderservice.domain.model.entity.Trade;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderHisReason;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,10 +29,10 @@ public class EngineMatchedEventHandler implements HandleEngineMatchedEventUseCas
 	@Override
 	public void handle(EngineMatchedCommand command) {
 		Order buyOrder = orderRepository.findByIdAndAccountIdForUpdate(command.buyOrderId(), command.buyAccountId())
-			.orElseThrow(() -> new CoreException(OrderErrorCode.ORDER_NOT_FOUND));
+			.orElseThrow(OrderNotFoundException::new);
 
 		Order sellOrder = orderRepository.findByIdAndAccountIdForUpdate(command.sellOrderId(), command.sellAccountId())
-			.orElseThrow(() -> new CoreException(OrderErrorCode.ORDER_NOT_FOUND));
+			.orElseThrow(OrderNotFoundException::new);
 
 		OrderStatus buyOrderFromStatus = buyOrder.getStatus();
 		OrderStatus sellOrderFromStatus = sellOrder.getStatus();

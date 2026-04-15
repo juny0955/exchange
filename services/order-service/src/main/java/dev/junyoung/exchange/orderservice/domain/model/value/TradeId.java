@@ -1,14 +1,14 @@
 package dev.junyoung.exchange.orderservice.domain.model.value;
 
-import java.util.UUID;
+import dev.junyoung.exchange.orderservice.domain.exception.OrderInvalidException;
 
-import dev.junyoung.exchange.core.exception.InvalidDomainException;
+import java.util.UUID;
 
 public record TradeId(
 	UUID value
 ) {
 	public TradeId {
 		if (value == null)
-			throw new InvalidDomainException("체결 ID는 필수 입니다.");
+			throw new OrderInvalidException("체결 ID는 필수 입니다.");
 	}
 }

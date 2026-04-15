@@ -1,7 +1,6 @@
 package dev.junyoung.exchange.orderservice.application.engine.processor;
 
-import dev.junyoung.exchange.core.exception.CoreException;
-import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
+import dev.junyoung.exchange.orderservice.application.exception.OrderNotFoundException;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderHistoryRepository;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderRepository;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
@@ -31,7 +30,7 @@ public class EngineOrderStateTransitionProcessor {
         OrderHisReason reason
     ) {
         Order order = orderRepository.findByIdAndAccountIdForUpdate(orderId, accountId)
-            .orElseThrow(() -> new CoreException(OrderErrorCode.ORDER_NOT_FOUND));
+            .orElseThrow(OrderNotFoundException::new);
 
         OrderStatus fromStatus = order.getStatus();
 

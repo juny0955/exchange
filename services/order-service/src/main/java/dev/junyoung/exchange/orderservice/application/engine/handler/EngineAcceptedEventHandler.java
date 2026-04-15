@@ -1,7 +1,6 @@
 package dev.junyoung.exchange.orderservice.application.engine.handler;
 
-import dev.junyoung.exchange.core.exception.CoreException;
-import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
+import dev.junyoung.exchange.orderservice.application.exception.OrderNotFoundException;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineAcceptedEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderHistoryRepository;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderRepository;
@@ -26,7 +25,7 @@ public class EngineAcceptedEventHandler implements HandleEngineAcceptedEventUseC
 	@Override
 	public void handle(OrderId orderId, AccountId accountId) {
 		Order order = orderRepository.findByIdAndAccountIdForUpdate(orderId, accountId)
-			.orElseThrow(() -> new CoreException(OrderErrorCode.ORDER_NOT_FOUND));
+			.orElseThrow(OrderNotFoundException::new);
 
 		OrderStatus fromStatus = order.getStatus();
 

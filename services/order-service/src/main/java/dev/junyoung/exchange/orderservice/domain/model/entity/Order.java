@@ -1,22 +1,18 @@
 package dev.junyoung.exchange.orderservice.domain.model.entity;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.Optional;
-
-import dev.junyoung.exchange.core.exception.ConflictDomainException;
-import dev.junyoung.exchange.core.exception.InvalidDomainException;
+import dev.junyoung.exchange.core.exception.domain.DomainConflictException;
+import dev.junyoung.exchange.orderservice.domain.exception.OrderInvalidException;
+import dev.junyoung.exchange.orderservice.domain.exception.OrderStateConflictException;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderType;
 import dev.junyoung.exchange.orderservice.domain.model.enums.Side;
 import dev.junyoung.exchange.orderservice.domain.model.enums.TimeInForce;
-import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
-import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
-import dev.junyoung.exchange.orderservice.domain.model.value.Price;
-import dev.junyoung.exchange.orderservice.domain.model.value.Quantity;
-import dev.junyoung.exchange.orderservice.domain.model.value.QuoteQty;
-import dev.junyoung.exchange.orderservice.domain.model.value.Symbol;
+import dev.junyoung.exchange.orderservice.domain.model.value.*;
 import lombok.Getter;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Optional;
 
 @Getter
 public class Order {
@@ -146,19 +142,19 @@ public class Order {
 	 * 실제 취소 확정은 매칭 엔진의 응답 이후 이루어진다.
 	 * </p>
 	 *
-	 * @throws ConflictDomainException 취소 요청 가능한 상태가 아닐 경우 ({@link OrderStatus#PENDING})
-	 * @throws ConflictDomainException 이미 취소 요청된 주문인 경우 ({@link OrderStatus#CANCEL_PENDING}, {@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING})
-	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
+	 * @throws DomainConflictException 취소 요청 가능한 상태가 아닐 경우 ({@link OrderStatus#PENDING})
+	 * @throws DomainConflictException 이미 취소 요청된 주문인 경우 ({@link OrderStatus#CANCEL_PENDING}, {@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING})
+	 * @throws DomainConflictException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
 	 */
 	public void requestCancel() {
 		if (OrderStatus.PENDING.equals(status))
-			throw new ConflictDomainException("취소 요청 가능한 상태가 아닙니다.");
+			throw new OrderStateConflictException("취소 요청 가능한 상태가 아닙니다.");
 
 		if (isCancelPendingStatus())
-			throw new ConflictDomainException("이미 취소 요청된 주문입니다.");
+			throw new OrderStateConflictException("이미 취소 요청된 주문입니다.");
 
 		if (isFinal())
-			throw new ConflictDomainException("이미 종료된 주문입니다.");
+			throw new OrderStateConflictException("이미 종료된 주문입니다.");
 
 		status = OrderStatus.PARTIALLY_FILLED.equals(status) ? OrderStatus.PARTIALLY_FILLED_CANCEL_PENDING : OrderStatus.CANCEL_PENDING;
 		updatedAt = Instant.now();
@@ -171,11 +167,11 @@ public class Order {
 	 *     주문 상태를 {@link OrderStatus#CANCELED}으로 변경한다.
 	 * </p>
 	 *
-	 * @throws ConflictDomainException 취소 대기 주문이 아닌 경우 ({@link OrderStatus#CANCEL_PENDING}), ({@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING})
+	 * @throws DomainConflictException 취소 대기 주문이 아닌 경우 ({@link OrderStatus#CANCEL_PENDING}), ({@link OrderStatus#PARTIALLY_FILLED_CANCEL_PENDING})
 	 */
 	public void cancel() {
 		if (!isCancelPendingStatus())
-			throw new ConflictDomainException("취소 대기 주문이 아닙니다.");
+			throw new OrderStateConflictException("취소 대기 주문이 아닙니다.");
 
 		status = OrderStatus.CANCELED;
 		updatedAt = Instant.now();
@@ -188,11 +184,11 @@ public class Order {
 	 *     주문 상태를 {@link OrderStatus#REJECTED}으로 변경한다.
 	 * </p>
 	 *
-	 * @throws ConflictDomainException 대기 상태가 아닌 경우 ({@link OrderStatus#PENDING})
+	 * @throws DomainConflictException 대기 상태가 아닌 경우 ({@link OrderStatus#PENDING})
 	 */
 	public void reject() {
 		if (!OrderStatus.PENDING.equals(status))
-			throw new ConflictDomainException("대기 상태 주문이 아닙니다.");
+			throw new OrderStateConflictException("대기 상태 주문이 아닙니다.");
 
 		status = OrderStatus.REJECTED;
 		updatedAt = Instant.now();
@@ -204,11 +200,11 @@ public class Order {
 	 * <p>
 	 *     주문 상태를 {@link OrderStatus#NEW}으로 변경한다.
 	 * </p>
-	 * @throws ConflictDomainException 대기 상태 주문이 아닌 경우 ({@link OrderStatus#PENDING})
+	 * @throws DomainConflictException 대기 상태 주문이 아닌 경우 ({@link OrderStatus#PENDING})
 	 */
 	public void accepted() {
 		if (!OrderStatus.PENDING.equals(status))
-			throw new ConflictDomainException("대기 상태 주문이 아닙니다.");
+			throw new OrderStateConflictException("대기 상태 주문이 아닙니다.");
 
 		status = OrderStatus.NEW;
 		updatedAt = Instant.now();
@@ -232,14 +228,14 @@ public class Order {
 	 * </ul>
 	 * @param baseQty 체결 수량
 	 * @param quoteQty 체결 금액
-	 * @throws ConflictDomainException 체결 가능 상태가 아닌 경우 ({@link OrderStatus#PENDING})
-	 * @throws ConflictDomainException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
+	 * @throws DomainConflictException 체결 가능 상태가 아닌 경우 ({@link OrderStatus#PENDING})
+	 * @throws DomainConflictException 이미 종료된 주문인 경우 ({@link OrderStatus#FILLED}, {@link OrderStatus#CANCELED}, {@link OrderStatus#REJECTED})
 	 */
 	public void fill(Quantity baseQty, QuoteQty quoteQty) {
 		if (OrderStatus.PENDING.equals(status))
-			throw new ConflictDomainException("체결 가능한 주문 상태가 아닙니다.");
+			throw new OrderStateConflictException("체결 가능한 주문 상태가 아닙니다.");
 		if (isFinal())
-			throw new ConflictDomainException("이미 종료된 주문입니다.");
+			throw new OrderStateConflictException("이미 종료된 주문입니다.");
 
 		cumBaseQty = cumBaseQty.add(baseQty);
 		cumQuoteQty = cumQuoteQty.add(quoteQty);
@@ -326,37 +322,37 @@ public class Order {
 	}
 
 	private void validateCommonFields() {
-		if (orderId == null) throw new InvalidDomainException("주문 ID는 필수입니다.");
-		if (accountId == null) throw new InvalidDomainException("계좌 ID는 필수입니다.");
-		if (clientOrderId == null || clientOrderId.isBlank()) throw new InvalidDomainException("멱등 주문 ID는 필수입니다.");
-		if (acceptedSeq <= 0) throw new InvalidDomainException("접수 순번은 0보다 커야합니다.");
-		if (symbol == null) throw new InvalidDomainException("거래 심볼은 필수입니다.");
-		if (side == null) throw new InvalidDomainException("주문 방향(매수/매도)은 필수입니다.");
-		if (orderType == null) throw new InvalidDomainException("주문 유형은 필수입니다.");
-		if (tif == null) throw new InvalidDomainException("주문 조건은 필수입니다.");
-		if (orderedAt == null) throw new InvalidDomainException("주문 시점은 필수입니다.");
+		if (orderId == null) throw new OrderInvalidException("주문 ID는 필수입니다.");
+		if (accountId == null) throw new OrderInvalidException("계좌 ID는 필수입니다.");
+		if (clientOrderId == null || clientOrderId.isBlank()) throw new OrderInvalidException("멱등 주문 ID는 필수입니다.");
+		if (acceptedSeq <= 0) throw new OrderInvalidException("접수 순번은 0보다 커야합니다.");
+		if (symbol == null) throw new OrderInvalidException("거래 심볼은 필수입니다.");
+		if (side == null) throw new OrderInvalidException("주문 방향(매수/매도)은 필수입니다.");
+		if (orderType == null) throw new OrderInvalidException("주문 유형은 필수입니다.");
+		if (tif == null) throw new OrderInvalidException("주문 조건은 필수입니다.");
+		if (orderedAt == null) throw new OrderInvalidException("주문 시점은 필수입니다.");
 	}
 
 	private void validateLimitOrder() {
-		if (quoteQty != null) throw new InvalidDomainException("지정가 주문에는 금액을 지정할 수 없습니다.");
-		if (price == null) throw new InvalidDomainException("지정가 주문에는 가격이 필수입니다.");
-		if (quantity == null) throw new InvalidDomainException("지정가 주문에는 수량이 필수입니다.");
-		if (quantity.isZero()) throw new InvalidDomainException("주문 수량은 0보다 커야합니다.");
+		if (quoteQty != null) throw new OrderInvalidException("지정가 주문에는 금액을 지정할 수 없습니다.");
+		if (price == null) throw new OrderInvalidException("지정가 주문에는 가격이 필수입니다.");
+		if (quantity == null) throw new OrderInvalidException("지정가 주문에는 수량이 필수입니다.");
+		if (quantity.isZero()) throw new OrderInvalidException("주문 수량은 0보다 커야합니다.");
 	}
 
 	private void validateMarketOrder() {
 		switch (side) {
 			case BUY -> {
-				if (price != null) throw new InvalidDomainException("시장가 매수 주문에는 가격을 지정할 수 없습니다.");
-				if (quantity != null) throw new InvalidDomainException("시장가 매수 주문에는 수량을 지정할 수 없습니다.");
-				if (quoteQty == null) throw new InvalidDomainException("시장가 매수 주문에는 금액이 필수입니다.");
-				if (quoteQty.isZero()) throw new InvalidDomainException("주문 금액은 0보다 커야합니다.");
+				if (price != null) throw new OrderInvalidException("시장가 매수 주문에는 가격을 지정할 수 없습니다.");
+				if (quantity != null) throw new OrderInvalidException("시장가 매수 주문에는 수량을 지정할 수 없습니다.");
+				if (quoteQty == null) throw new OrderInvalidException("시장가 매수 주문에는 금액이 필수입니다.");
+				if (quoteQty.isZero()) throw new OrderInvalidException("주문 금액은 0보다 커야합니다.");
 			}
 			case SELL -> {
-				if (price != null) throw new InvalidDomainException("시장가 매도 주문에는 가격을 지정할 수 없습니다.");
-				if (quoteQty != null) throw new InvalidDomainException("시장가 매도 주문에는 금액을 지정할 수 없습니다.");
-				if (quantity == null) throw new InvalidDomainException("시장가 매도 주문에는 수량이 필수입니다.");
-				if (quantity.isZero()) throw new InvalidDomainException("주문 수량은 0보다 커야합니다.");
+				if (price != null) throw new OrderInvalidException("시장가 매도 주문에는 가격을 지정할 수 없습니다.");
+				if (quoteQty != null) throw new OrderInvalidException("시장가 매도 주문에는 금액을 지정할 수 없습니다.");
+				if (quantity == null) throw new OrderInvalidException("시장가 매도 주문에는 수량이 필수입니다.");
+				if (quantity.isZero()) throw new OrderInvalidException("주문 수량은 0보다 커야합니다.");
 			}
 		}
 	}

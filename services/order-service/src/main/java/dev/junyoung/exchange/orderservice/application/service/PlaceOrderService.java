@@ -1,7 +1,6 @@
 package dev.junyoung.exchange.orderservice.application.service;
 
-import dev.junyoung.exchange.core.exception.CoreException;
-import dev.junyoung.exchange.orderservice.application.exception.OrderErrorCode;
+import dev.junyoung.exchange.orderservice.application.exception.OrderDuplicateException;
 import dev.junyoung.exchange.orderservice.application.port.in.PlaceOrderUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.command.PlaceOrderCommand;
 import dev.junyoung.exchange.orderservice.application.port.out.AcceptedSeqGenerator;
@@ -31,7 +30,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 	@Override
 	public OrderId placeOrder(PlaceOrderCommand command) {
 		if (orderRepository.existsByAccountIdAndClientOrderId(command.accountId(), command.clientOrderId()))
-			throw new CoreException(OrderErrorCode.DUPLICATE_PLACE_ORDER);
+			throw new OrderDuplicateException();
 
 		Order order = Order.create(
 			command.accountId(),

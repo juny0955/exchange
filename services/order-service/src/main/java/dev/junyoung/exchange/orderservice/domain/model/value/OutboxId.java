@@ -1,15 +1,15 @@
 package dev.junyoung.exchange.orderservice.domain.model.value;
 
-import java.util.UUID;
+import dev.junyoung.exchange.orderservice.domain.exception.OrderInvalidException;
 
-import dev.junyoung.exchange.core.exception.InvalidDomainException;
+import java.util.UUID;
 
 public record OutboxId(
 	UUID value
 ) {
 	public OutboxId {
 		if (value == null)
-			throw new InvalidDomainException("아웃박스 ID는 필수 입니다.");
+			throw new OrderInvalidException("아웃박스 ID는 필수 입니다.");
 	}
 
 	public static OutboxId newId() {
