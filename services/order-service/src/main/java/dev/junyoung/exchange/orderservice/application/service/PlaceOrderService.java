@@ -29,6 +29,10 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 
 	@Override
 	public OrderId placeOrder(PlaceOrderCommand command) {
+		/*
+		TODO race condition issue
+		 DB uk 제약조건으로 막히긴 하지만 정리할 필요 있음
+		 */
 		if (orderRepository.existsByAccountIdAndClientOrderId(command.accountId(), command.clientOrderId()))
 			throw new OrderDuplicateException();
 
