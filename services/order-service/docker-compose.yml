@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: order-postgres
+    restart: always
+    ports:
+      - "15432:5432"
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: exchange
+      POSTGRES_PASSWORD: exchange
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - ./src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - order-postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U exchange -d order_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  order-postgres_data:
