@@ -19,6 +19,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - order-internal
 
 volumes:
   order-postgres_data:
+
+networks:
+  order-internal:
+    driver: bridge
