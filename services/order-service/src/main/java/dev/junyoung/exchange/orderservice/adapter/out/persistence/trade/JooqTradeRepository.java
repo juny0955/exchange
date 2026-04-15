@@ -1,4 +1,4 @@
-package dev.junyoung.exchange.orderservice.adapter.out.persistence;
+package dev.junyoung.exchange.orderservice.adapter.out.persistence.trade;
 
 import java.util.List;
 

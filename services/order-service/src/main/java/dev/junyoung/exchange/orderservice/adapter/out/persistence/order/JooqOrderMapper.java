@@ -1,4 +1,4 @@
-package dev.junyoung.exchange.orderservice.adapter.out.persistence;
+package dev.junyoung.exchange.orderservice.adapter.out.persistence.order;
 
 import dev.junyoung.exchange.orderservice.Tables;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
@@ -10,8 +10,7 @@ import dev.junyoung.exchange.orderservice.domain.model.value.*;
 import dev.junyoung.exchange.orderservice.tables.records.OrdersRecord;
 import org.jooq.DSLContext;
 
-public class JooqOrderMapper {
-
+public final class JooqOrderMapper {
 
     static Order toDomain(OrdersRecord record) {
         return new Order(

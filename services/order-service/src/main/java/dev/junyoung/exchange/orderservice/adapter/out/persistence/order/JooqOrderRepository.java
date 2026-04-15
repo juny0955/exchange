@@ -1,4 +1,4 @@
-package dev.junyoung.exchange.orderservice.adapter.out.persistence;
+package dev.junyoung.exchange.orderservice.adapter.out.persistence.order;
 
 import dev.junyoung.exchange.orderservice.Tables;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderRepository;
