@@ -53,6 +53,7 @@ CREATE INDEX idx_order_id_created_at ON order_history (order_id, created_at);
 CREATE TABLE order_outbox (
     outbox_id       UUID PRIMARY KEY,
     order_id        UUID NOT NULL,
+    aggregate_type  VARCHAR(32) NOT NULL DEFAULT 'ORDER',
     event_type      VARCHAR(32) NOT NULL,
     payload         JSONB NOT NULL,
     status          VARCHAR(32) NOT NULL,

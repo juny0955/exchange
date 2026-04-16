@@ -14,6 +14,7 @@ import lombok.Getter;
 public class OrderOutbox {
 	private final OutboxId outboxId;
 	private final OrderId orderId;
+	private final String aggregateType;
 	private final EventType type;
 	private final String payload;
 	private OutboxStatus status;
@@ -21,10 +22,13 @@ public class OrderOutbox {
 	private final Instant createdAt;
 	private Instant publishedAt;
 
+	private static final String AGGREGATE_TYPE = "ORDER";
+
 	public static OrderOutbox create(OrderId orderId, EventType type, String payload) {
 		return new OrderOutbox(
 			OutboxId.newId(),
 			orderId,
+			AGGREGATE_TYPE,
 			type,
 			payload,
 			OutboxStatus.PENDING,
