@@ -13,6 +13,7 @@ services:
     environment:
       # 이 노드의 고유 ID (클러스터 내에서 브로커를 식별)
       - KAFKA_NODE_ID=1
+      - KAFKA_CLUSTER_ID=B2Bf7XNYRVeRs-Ioo3H_Tw
 
       # 이 노드의 역할: broker(메시지 저장/전달) + controller(클러스터 메타데이터 관리)
       # KRaft 모드에서는 Zookeeper 없이 controller가 그 역할을 대신함
