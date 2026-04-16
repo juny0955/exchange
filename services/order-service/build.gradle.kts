@@ -19,10 +19,12 @@ dependencies {
     implementation(project(":libs:proto")) // NOTE: 현재 grpc 사용하지않지만 추후 사용 가능있기에 남겨둠
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.grpc:spring-grpc-client-spring-boot-starter")
+    implementation("org.springframework.boot:spring-boot-starter-kafka")
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.kafka:spring-kafka-test")
     runtimeOnly("org.postgresql:postgresql")
     testCompileOnly("org.projectlombok:lombok")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
