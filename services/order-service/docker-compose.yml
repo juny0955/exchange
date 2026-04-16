@@ -51,7 +51,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8083/connectors"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 15
 
   order-connector-init:
     image: curlimages/curl:latest
@@ -84,7 +84,7 @@ services:
             "transforms.outbox.table.field.event.key": "order_id",
             "transforms.outbox.table.field.event.type": "event_type",
             "transforms.outbox.table.field.event.payload": "payload",
-            "transforms.outbox.table.expand.payload": "true",
+            "transforms.outbox.table.expand.payload": "true"
          }
       }'
     networks:
