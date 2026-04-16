@@ -1,10 +1,15 @@
 services:
-  postgres:
+  order-postgres:
     image: postgres:16
     container_name: order-postgres
     restart: always
     ports:
       - "15432:5432"
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_replication_slots=4
+      -c max_wal_senders=4
     environment:
       POSTGRES_DB: order_db
       POSTGRES_USER: exchange
@@ -21,6 +26,71 @@ services:
       retries: 5
     networks:
       - order-internal
+
+  order-kafka-connect:
+    image: debezium/connect:3.0.0.Final
+    container_name: order-kafka-connect
+    depends_on:
+      order-postgres:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka:19092
+      GROUP_ID: order-connect-cluster
+      CONFIG_STORAGE_TOPIC: order_connect_configs
+      OFFSET_STORAGE_TOPIC: order_connect_offsets
+      STATUS_STORAGE_TOPIC: order_connect_status
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+    networks:
+      - order-internal
+      - kafka-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/connectors"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  order-connector-init:
+    image: curlimages/curl:latest
+    container_name: order-connector-init
+    depends_on:
+      order-kafka-connect:
+        condition: service_healthy
+    restart: "no"
+    command: >
+      curl -s -X POST http://order-kafka-connect:8083/connectors
+      -H "Content-Type: application/json"
+      -d '{
+        "name": "order-outbox-connector",
+         "config": {
+            "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+            "plugin.name": "pgoutput",
+            "database.hostname": "order-postgres",
+            "database.port": "5432",
+            "database.user": "exchange",
+            "database.password": "exchange",
+            "database.dbname": "order_db",
+            "database.server.name": "order-db",
+            "topic.prefix": "order-db",
+            "table.include.list": "public.order_outbox",
+            "transforms": "outbox",
+            "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+            "transforms.outbox.route.by.field": "event_type",
+            "transforms.outbox.route.topic.replacement": "order.$${routedByValue}",
+            "transforms.outbox.table.field.event.id": "outbox_id",
+            "transforms.outbox.table.field.event.key": "order_id",
+            "transforms.outbox.table.field.event.type": "event_type",
+            "transforms.outbox.table.field.event.payload": "payload",
+            "transforms.outbox.table.field.event.timestamp": "created_at"
+            "transforms.outbox.table.expand.payload": "true",
+         }
+      }'
+    networks:
+      - order-internal
+      - kafka-network
 
 volumes:
   order-postgres_data:
