@@ -1,5 +1,9 @@
 package dev.junyoung.exchange.orderservice.adapter.out.persistence.outbox;
 
+import dev.junyoung.exchange.orderservice.domain.model.enums.EventType;
+import dev.junyoung.exchange.orderservice.domain.model.enums.OutboxStatus;
+import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
+import dev.junyoung.exchange.orderservice.domain.model.value.OutboxId;
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 
@@ -21,5 +25,19 @@ public final class JooqOrderOutboxMapper {
 		record.setCreatedAt(orderOutbox.getCreatedAt());
 		record.setPublishedAt(orderOutbox.getPublishedAt());
 		return record;
+	}
+
+	public static OrderOutbox toDomain(OrderOutboxRecord record) {
+		return new OrderOutbox(
+			new OutboxId(record.getOutboxId()),
+			new OrderId(record.getOrderId()),
+			record.getAggregateType(),
+			EventType.valueOf(record.getEventType()),
+			record.getPayload().data(),
+			OutboxStatus.valueOf(record.getStatus()),
+			record.getRetryCount(),
+			record.getCreatedAt(),
+			record.getPublishedAt()
+		);
 	}
 }

@@ -2,6 +2,7 @@ package dev.junyoung.exchange.orderservice.domain.model.value;
 
 import dev.junyoung.exchange.orderservice.domain.exception.OrderInvalidException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 public record OutboxId(
@@ -15,4 +16,8 @@ public record OutboxId(
 	public static OutboxId newId() {
 		return new OutboxId(UUID.randomUUID());
 	}
+
+    public static OutboxId from(byte[] value) {
+        return new OutboxId(UUID.fromString(new String(value, StandardCharsets.UTF_8)));
+    }
 }

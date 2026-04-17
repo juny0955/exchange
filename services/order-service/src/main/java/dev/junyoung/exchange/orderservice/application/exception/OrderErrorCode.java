@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum OrderErrorCode implements ErrorCode {
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER-NOT-FOUND", "해당 주문을 찾을 수 없습니다."),
+    ORDER_OUTBOX_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER-OUTBOX-NOT-FOUND", "해당 Outbox를 찾을 수 없습니다."),
     DUPLICATE_PLACE_ORDER(HttpStatus.CONFLICT, "ORDER-DUP-PLACE", "이미 처리된 주문입니다."),
     ;
 
