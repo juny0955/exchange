@@ -2,7 +2,6 @@ package dev.junyoung.exchange.orderservice.domain.model.entity;
 
 import java.time.Instant;
 
-import dev.junyoung.exchange.orderservice.domain.exception.OrderOutboxAlreadySuccessException;
 import dev.junyoung.exchange.orderservice.domain.model.enums.EventType;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OutboxStatus;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
@@ -42,13 +41,18 @@ public class OrderOutbox {
 	/**
 	 * 성공 상태로 변경한다
 	 *
-	 * <p>{@link OutboxStatus#SUCCESS} 상태로 변경 </p>
-	 * @throws OrderOutboxAlreadySuccessException 이미 성공 상태인 경우
+	 * <p>
+	 *     {@link OutboxStatus#SUCCESS} 상태로 변경한다.
+	 *     이미 {@link OutboxStatus#SUCCESS}인 경우 false 리턴
+	 * </p>
+	 * @return 변경 여부
 	 */
-    public void published() {
+    public boolean published() {
 		if (OutboxStatus.SUCCESS.equals(status))
-			throw new OrderOutboxAlreadySuccessException(outboxId);
+			return false;
+
         status = OutboxStatus.SUCCESS;
 		publishedAt = Instant.now();
+		return true;
     }
 }

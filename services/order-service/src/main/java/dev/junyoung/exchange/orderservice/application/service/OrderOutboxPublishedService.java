@@ -1,13 +1,14 @@
 package dev.junyoung.exchange.orderservice.application.service;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import dev.junyoung.exchange.orderservice.application.exception.OrderOutboxNotFoundException;
 import dev.junyoung.exchange.orderservice.application.port.in.OrderOutboxPublishedUseCase;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderOutboxRepository;
 import dev.junyoung.exchange.orderservice.domain.model.entity.OrderOutbox;
 import dev.junyoung.exchange.orderservice.domain.model.value.OutboxId;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +22,9 @@ public class OrderOutboxPublishedService implements OrderOutboxPublishedUseCase 
         OrderOutbox outbox = orderOutboxRepository.findById(outboxId)
             .orElseThrow(OrderOutboxNotFoundException::new);
 
-        outbox.published();
+        boolean changed = outbox.published();
+        if (!changed) return;
+
         orderOutboxRepository.updateStatus(outbox);
     }
 }
