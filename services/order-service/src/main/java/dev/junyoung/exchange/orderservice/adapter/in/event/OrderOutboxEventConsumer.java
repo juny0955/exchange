@@ -1,6 +1,7 @@
 package dev.junyoung.exchange.orderservice.adapter.in.event;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 import dev.junyoung.exchange.orderservice.adapter.in.event.exception.EventHeaderMissingException;
 import dev.junyoung.exchange.orderservice.application.exception.OrderOutboxNotFoundException;
-import dev.junyoung.exchange.orderservice.application.port.in.OrderOutboxPublishedUseCase;
+import dev.junyoung.exchange.orderservice.application.port.in.CompleteOrderOutboxUseCase;
 import dev.junyoung.exchange.orderservice.domain.model.value.OutboxId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,7 @@ public class OrderOutboxEventConsumer {
     private static final String PLACE_ORDER_TOPIC = "order.PLACE_ORDER";
     private static final String CANCEL_ORDER_TOPIC = "order.CANCEL_ORDER";
 
-    private final OrderOutboxPublishedUseCase orderOutboxPublishedUseCase;
+    private final CompleteOrderOutboxUseCase completeOrderOutboxUseCase;
 
     /**
      * 상태 변경 실패시 재시도 수행 후 {@link #handleDlt(ConsumerRecord)}에서 로깅만 수행 (별도 처리 X)
@@ -49,13 +50,14 @@ public class OrderOutboxEventConsumer {
         topics = {PLACE_ORDER_TOPIC, CANCEL_ORDER_TOPIC},
         groupId = GROUP_ID
     )
-    public void orderOutboxStatusUpdater(ConsumerRecord<String, String> record) {
+    public void updateOutboxStatus(ConsumerRecord<String, String> record) {
         Header header = record.headers().lastHeader(OUTBOX_ID_HEADER_NAME);
         if (header == null)
             throw new EventHeaderMissingException(GROUP_ID, record.topic(), record.partition(), record.offset());
 
         OutboxId outboxId = OutboxId.from(header.value());
-        orderOutboxPublishedUseCase.orderOutboxPublished(outboxId);
+        Instant publishedAt = Instant.ofEpochMilli(record.timestamp());
+        completeOrderOutboxUseCase.completeOrderOutbox(outboxId, publishedAt);
     }
 
     @DltHandler

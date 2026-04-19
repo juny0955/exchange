@@ -47,12 +47,12 @@ public class OrderOutbox {
 	 * </p>
 	 * @return 변경 여부
 	 */
-    public boolean published() {
+    public boolean complete(Instant publishedAt) {
 		if (OutboxStatus.SUCCESS.equals(status))
 			return false;
 
         status = OutboxStatus.SUCCESS;
-		publishedAt = Instant.now();
+		this.publishedAt = publishedAt;
 		return true;
     }
 }
