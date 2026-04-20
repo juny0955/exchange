@@ -1,8 +1,11 @@
 package dev.junyoung.exchange.orderservice.adapter.in.event;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-
+import dev.junyoung.exchange.orderservice.adapter.in.event.exception.EventHeaderMissingException;
+import dev.junyoung.exchange.orderservice.application.exception.OrderOutboxNotFoundException;
+import dev.junyoung.exchange.orderservice.application.port.in.CompleteOrderOutboxUseCase;
+import dev.junyoung.exchange.orderservice.domain.model.value.OutboxId;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,12 +15,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.RetryableTopic;
 import org.springframework.stereotype.Component;
 
-import dev.junyoung.exchange.orderservice.adapter.in.event.exception.EventHeaderMissingException;
-import dev.junyoung.exchange.orderservice.application.exception.OrderOutboxNotFoundException;
-import dev.junyoung.exchange.orderservice.application.port.in.CompleteOrderOutboxUseCase;
-import dev.junyoung.exchange.orderservice.domain.model.value.OutboxId;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 
 @Component
 @RequiredArgsConstructor
@@ -41,6 +40,7 @@ public class OrderOutboxEventConsumer {
         exclude = {
             OrderOutboxNotFoundException.class, // outbox 테이블 커밋 wal읽어서 처리하기때문에 발생가능성 거의없음
             IllegalArgumentException.class,     // 메시지 포멧 파싱 오류로 재시도 무의미
+            EventHeaderMissingException.class,
         },
         dltTopicSuffix = ".dlt"
     )
