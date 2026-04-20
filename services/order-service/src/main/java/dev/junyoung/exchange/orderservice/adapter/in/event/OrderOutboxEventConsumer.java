@@ -5,6 +5,7 @@ import java.time.Instant;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -23,13 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OrderOutboxEventConsumer {
 
-    /**
-     * TODO props 분리 예정
-     */
     private static final String OUTBOX_ID_HEADER_NAME = "id";
-    private static final String GROUP_ID = "order-outbox-status-updater";
-    private static final String PLACE_ORDER_TOPIC = "order.PLACE_ORDER";
-    private static final String CANCEL_ORDER_TOPIC = "order.CANCEL_ORDER";
+
+    @Value("${kafka.listeners.order-outbox.group-id}")
+    private String groupId;
 
     private final CompleteOrderOutboxUseCase completeOrderOutboxUseCase;
 
@@ -47,13 +45,16 @@ public class OrderOutboxEventConsumer {
         dltTopicSuffix = ".dlt"
     )
     @KafkaListener(
-        topics = {PLACE_ORDER_TOPIC, CANCEL_ORDER_TOPIC},
-        groupId = GROUP_ID
+        topics = {
+            "${kafka.listeners.order-outbox.topics.place-order}",
+            "${kafka.listeners.order-outbox.topics.cancel-order}"
+        },
+        groupId = "${kafka.listeners.order-outbox.group-id}"
     )
     public void updateOutboxStatus(ConsumerRecord<String, String> record) {
         Header header = record.headers().lastHeader(OUTBOX_ID_HEADER_NAME);
         if (header == null)
-            throw new EventHeaderMissingException(GROUP_ID, record.topic(), record.partition(), record.offset());
+            throw new EventHeaderMissingException(groupId, record.topic(), record.partition(), record.offset());
 
         OutboxId outboxId = OutboxId.from(header.value());
         Instant publishedAt = Instant.ofEpochMilli(record.timestamp());
@@ -63,7 +64,7 @@ public class OrderOutboxEventConsumer {
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
         String outboxIdStr = extractOutboxIdSafely(record);
-        log.error("[{}] Outbox 상태 변경 실패 outboxId={} topic={} partition={} offset={}", GROUP_ID, outboxIdStr, record.topic(), record.partition(), record.offset());
+        log.error("[{}] Outbox 상태 변경 실패 outboxId={} topic={} partition={} offset={}", groupId, outboxIdStr, record.topic(), record.partition(), record.offset());
     }
 
     private String extractOutboxIdSafely(ConsumerRecord<String, String> record) {

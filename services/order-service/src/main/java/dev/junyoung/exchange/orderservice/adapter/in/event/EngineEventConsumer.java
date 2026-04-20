@@ -21,12 +21,6 @@ import tools.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class EngineEventConsumer {
 
-    private static final String GROUP_ID = "engine-event-handler";
-    private static final String ACCEPTED_TOPIC = "engine.ACCEPTED";
-    private static final String MATCHED_TOPIC = "engine.MATCHED";
-    private static final String CANCELED_TOPIC = "engine.CANCELED";
-    private static final String REJECTED_TOPIC = "engine.REJECTED";
-
     private final HandleEngineAcceptedEventUseCase acceptedEventUseCase;
     private final HandleEngineMatchedEventUseCase matchedEventUseCase;
     private final HandleEngineRejectedEventUseCase rejectedEventUseCase;
@@ -34,28 +28,40 @@ public class EngineEventConsumer {
     private final ObjectMapper objectMapper;
 
     @EngineRetryableTopic
-    @KafkaListener(topics = ACCEPTED_TOPIC, groupId = GROUP_ID)
+    @KafkaListener(
+        topics = "${kafka.listeners.engine.topics.accepted}",
+        groupId = "${kafka.listeners.engine.group-id}"
+    )
     public void consumeAccepted(ConsumerRecord<String, String> record) {
         EngineAcceptedMessage message = objectMapper.readValue(record.value(), EngineAcceptedMessage.class);
         acceptedEventUseCase.handle(new OrderId(message.orderId()), new AccountId(message.accountId()));
     }
 
     @EngineRetryableTopic
-    @KafkaListener(topics = MATCHED_TOPIC, groupId = GROUP_ID)
+    @KafkaListener(
+        topics = "${kafka.listeners.engine.topics.matched}",
+        groupId = "${kafka.listeners.engine.group-id}"
+    )
     public void consumeMatched(ConsumerRecord<String, String> record) {
         EngineMatchedMessage message = objectMapper.readValue(record.value(), EngineMatchedMessage.class);
         matchedEventUseCase.handle(message.toCommand());
     }
 
     @EngineRetryableTopic
-    @KafkaListener(topics = CANCELED_TOPIC, groupId = GROUP_ID)
+    @KafkaListener(
+        topics = "${kafka.listeners.engine.topics.canceled}",
+        groupId = "${kafka.listeners.engine.group-id}"
+    )
     public void consumeCanceled(ConsumerRecord<String, String> record) {
         EngineCanceledMessage message = objectMapper.readValue(record.value(), EngineCanceledMessage.class);
         canceledEventUseCase.handle(new OrderId(message.orderId()), new AccountId(message.accountId()));
     }
 
     @EngineRetryableTopic
-    @KafkaListener(topics = REJECTED_TOPIC, groupId = GROUP_ID)
+    @KafkaListener(
+        topics = "${kafka.listeners.engine.topics.rejected}",
+        groupId = "${kafka.listeners.engine.group-id}"
+    )
     public void consumeRejected(ConsumerRecord<String, String> record) {
         EngineRejectedMessage message = objectMapper.readValue(record.value(), EngineRejectedMessage.class);
         rejectedEventUseCase.handle(new OrderId(message.orderId()), new AccountId(message.accountId()));

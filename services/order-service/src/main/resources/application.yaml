@@ -21,6 +21,21 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       auto-offset-reset: earliest
 
+kafka:
+  listeners:
+    order-outbox:
+      group-id: order-outbox-status-updater
+      topics:
+        place-order: order.PLACE_ORDER
+        cancel-order: order.CANCEL_ORDER
+    engine:
+      group-id: order-engine-event-handler
+      topics:
+        accepted: engine.ACCEPTED
+        matched: engine.MATCHED
+        canceled: engine.CANCELED
+        rejected: engine.REJECTED
+
 #  grpc:
 #    client:
 #      default-channel:
