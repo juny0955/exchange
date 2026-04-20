@@ -75,12 +75,9 @@ public class EngineEventConsumer {
     @DltHandler
     public void handleDlt(
         ConsumerRecord<String, String> record,
-        @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
-        @Header(KafkaHeaders.RECEIVED_PARTITION) String partition,
-        @Header(KafkaHeaders.OFFSET) long offset,
         @Header(KafkaHeaders.EXCEPTION_MESSAGE) String errorMessage
     ) {
-        log.error("엔진 이벤트 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", topic, partition, offset, errorMessage, record.value());
+        log.error("엔진 이벤트 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", record.topic(), record.partition(), record.offset(), errorMessage, record.value());
         // TODO 실패 이벤트 DB 영속
     }
 }
