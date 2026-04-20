@@ -1,35 +1,32 @@
 package dev.junyoung.exchange.orderservice.adapter.in.event;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.common.header.Header;
-import org.springframework.kafka.annotation.BackOff;
-import org.springframework.kafka.annotation.DltHandler;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.annotation.RetryableTopic;
-import org.springframework.stereotype.Component;
-
 import dev.junyoung.exchange.orderservice.adapter.in.event.exception.EventHeaderMissingException;
 import dev.junyoung.exchange.orderservice.application.exception.OrderOutboxNotFoundException;
 import dev.junyoung.exchange.orderservice.application.port.in.CompleteOrderOutboxUseCase;
 import dev.junyoung.exchange.orderservice.domain.model.value.OutboxId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Header;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.annotation.BackOff;
+import org.springframework.kafka.annotation.DltHandler;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.RetryableTopic;
+import org.springframework.stereotype.Component;
+
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class OrderOutboxEventConsumer {
 
-    /**
-     * TODO props 분리 예정
-     */
     private static final String OUTBOX_ID_HEADER_NAME = "id";
-    private static final String GROUP_ID = "order-outbox-status-updater";
-    private static final String PLACE_ORDER_TOPIC = "order.PLACE_ORDER";
-    private static final String CANCEL_ORDER_TOPIC = "order.CANCEL_ORDER";
+
+    @Value("${kafka.listeners.order-outbox.group-id}")
+    private String groupId;
 
     private final CompleteOrderOutboxUseCase completeOrderOutboxUseCase;
 
@@ -43,17 +40,21 @@ public class OrderOutboxEventConsumer {
         exclude = {
             OrderOutboxNotFoundException.class, // outbox 테이블 커밋 wal읽어서 처리하기때문에 발생가능성 거의없음
             IllegalArgumentException.class,     // 메시지 포멧 파싱 오류로 재시도 무의미
+            EventHeaderMissingException.class,
         },
         dltTopicSuffix = ".dlt"
     )
     @KafkaListener(
-        topics = {PLACE_ORDER_TOPIC, CANCEL_ORDER_TOPIC},
-        groupId = GROUP_ID
+        topics = {
+            "${kafka.listeners.order-outbox.topics.place-order}",
+            "${kafka.listeners.order-outbox.topics.cancel-order}"
+        },
+        groupId = "${kafka.listeners.order-outbox.group-id}"
     )
     public void updateOutboxStatus(ConsumerRecord<String, String> record) {
         Header header = record.headers().lastHeader(OUTBOX_ID_HEADER_NAME);
         if (header == null)
-            throw new EventHeaderMissingException(GROUP_ID, record.topic(), record.partition(), record.offset());
+            throw new EventHeaderMissingException(groupId, record.topic(), record.partition(), record.offset());
 
         OutboxId outboxId = OutboxId.from(header.value());
         Instant publishedAt = Instant.ofEpochMilli(record.timestamp());
@@ -63,7 +64,7 @@ public class OrderOutboxEventConsumer {
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
         String outboxIdStr = extractOutboxIdSafely(record);
-        log.error("[{}] Outbox 상태 변경 실패 outboxId={} topic={} partition={} offset={}", GROUP_ID, outboxIdStr, record.topic(), record.partition(), record.offset());
+        log.error("[{}] Outbox 상태 변경 실패 outboxId={} topic={} partition={} offset={}", groupId, outboxIdStr, record.topic(), record.partition(), record.offset());
     }
 
     private String extractOutboxIdSafely(ConsumerRecord<String, String> record) {
