@@ -12,13 +12,18 @@ import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngin
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class EngineEventConsumer {
 
     private final HandleEngineAcceptedEventUseCase acceptedEventUseCase;
@@ -65,5 +70,17 @@ public class EngineEventConsumer {
     public void consumeRejected(ConsumerRecord<String, String> record) {
         EngineRejectedMessage message = objectMapper.readValue(record.value(), EngineRejectedMessage.class);
         rejectedEventUseCase.handle(new OrderId(message.orderId()), new AccountId(message.accountId()));
+    }
+
+    @DltHandler
+    public void handleDlt(
+        ConsumerRecord<String, String> record,
+        @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+        @Header(KafkaHeaders.RECEIVED_PARTITION) String partition,
+        @Header(KafkaHeaders.OFFSET) long offset,
+        @Header(KafkaHeaders.EXCEPTION_MESSAGE) String errorMessage
+    ) {
+        log.error("엔진 이벤트 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", topic, partition, offset, errorMessage, record.value());
+        // TODO 실패 이벤트 DB 영속
     }
 }
