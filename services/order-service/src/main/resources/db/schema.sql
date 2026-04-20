@@ -62,3 +62,17 @@ CREATE TABLE order_outbox (
     published_at    TIMESTAMPTZ
 );
 
+CREATE TABLE engine_failed_event (
+    failed_id       BIGSERIAL PRIMARY KEY,
+    topic           VARCHAR(64) NOT NULL,
+    partition       INT NOT NULL,
+    event_offset    BIGINT NOT NULL,
+    payload         JSONB NOT NULL,
+    error_message   TEXT,
+    status          VARCHAR(32) NOT NULL,
+    retry_count     INT NOT NULL DEFAULT 0,
+    failed_at       TIMESTAMPTZ NOT NULL,
+    resolved_at     TIMESTAMPTZ,
+
+    CONSTRAINT uk_kafka_position UNIQUE (topic, partition, event_offset)
+);
