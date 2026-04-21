@@ -1,8 +1,6 @@
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
-use crate::models::ValidationError;
-
 #[derive(Debug, Clone, Copy)]
 pub enum Side {
     Buy,
@@ -49,11 +47,8 @@ impl AccountId {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Price(Decimal);
 impl Price {
-    pub fn new(val: Decimal) -> Result<Self, ValidationError> {
-        if val.is_sign_negative() || val.is_zero() {
-            return Err(ValidationError::InvalidPrice(val));
-        }
-        Ok(Self(val))
+    pub fn new(val: Decimal) -> Self {
+        Self(val)
     }
 
     pub fn value(&self) -> Decimal {
@@ -64,16 +59,10 @@ impl Price {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Quantity(Decimal);
 impl Quantity {
-    pub fn new(val: Decimal) -> Result<Self, ValidationError> {
-        if val.is_sign_negative() || val.is_zero() {
-            return Err(ValidationError::InvalidQuantity(val));
-        }
-        Ok(Self(val))
+    pub fn new(val: Decimal) -> Self {
+        Self(val)
     }
 
-    /// 누적 체결용
-    ///
-    /// 검증을 진행하지않는다
     pub fn zero() -> Self {
         Self(Decimal::ZERO)
     }
@@ -86,16 +75,10 @@ impl Quantity {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct QuoteQty(Decimal);
 impl QuoteQty {
-    pub fn new(val: Decimal) -> Result<Self, ValidationError> {
-        if val.is_sign_negative() || val.is_zero() {
-            return Err(ValidationError::InvalidQuoteQty(val));
-        }
-        Ok(Self(val))
+    pub fn new(val: Decimal) -> Self {
+        Self(val)
     }
 
-    /// 누적 체결용
-    ///
-    /// 검증을 진행하지않는다
     pub fn zero() -> Self {
         Self(Decimal::ZERO)
     }
