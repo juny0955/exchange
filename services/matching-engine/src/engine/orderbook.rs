@@ -20,6 +20,7 @@ impl OrderBook {
         }
     }
 
+    
     pub fn add(&mut self, order: Order) {
         let order_id = order.order_id;
         let side = order.side;
