@@ -19,3 +19,17 @@ pub struct Order {
     pub filled_qty: Quantity,
     pub filled_quote_qty: QuoteQty,
 }
+
+impl Order {
+    pub fn fill(&mut self, fill_qty: Quantity) {
+        self.filled_qty = self.filled_qty.add(fill_qty);
+    }
+
+    pub fn remaining_qty(&self) -> Quantity {
+        self.quantity.unwrap().sub(self.filled_qty)
+    }
+
+    pub fn is_fully_filled(&self) -> bool {
+        self.quantity.unwrap().value().eq(&self.filled_qty.value())
+    }
+}
