@@ -73,6 +73,7 @@ impl Matcher {
             return EngineEvent::Canceled { order_id: order.order_id, reason: CancelReason::FokExpired };
         }
 
+        let mut taker = order;
         let mut trades = Vec::new();
         let mut remaining_quote = required_quote;
 
@@ -84,12 +85,13 @@ impl Matcher {
             let fill_quote = QuoteQty::new(maker.price.value() * fill_qty.value());
 
             book.fill(&maker.order_id, fill_qty);
+            taker.fill(fill_qty, fill_quote);
             remaining_quote = remaining_quote.sub(fill_quote);
 
             trades.push(Trade::new(
-                order.symbol.clone(),
-                order.account_id,
-                order.order_id,
+                taker.symbol.clone(),
+                taker.account_id,
+                taker.order_id,
                 maker.account_id,
                 maker.order_id,
                 maker.price,
@@ -143,7 +145,7 @@ impl Matcher {
         let quote_qty = QuoteQty::new(maker.price.value() * fill_qty.value());
 
         book.fill(&maker.order_id, fill_qty);
-        taker.fill(fill_qty);
+        taker.fill(fill_qty, quote_qty);
 
         let (buy_account_id, buy_order_id, sell_account_id, sell_order_id) = match taker.side {
             Side::Buy => (taker.account_id, taker.order_id, maker.account_id, maker.order_id),

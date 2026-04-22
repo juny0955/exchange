@@ -21,8 +21,9 @@ pub struct Order {
 }
 
 impl Order {
-    pub fn fill(&mut self, fill_qty: Quantity) {
+    pub fn fill(&mut self, fill_qty: Quantity, fill_quote: QuoteQty) {
         self.filled_qty = self.filled_qty.add(fill_qty);
+        self.filled_quote_qty = self.filled_quote_qty.add(fill_quote);
     }
 
     pub fn remaining_qty(&self) -> Quantity {

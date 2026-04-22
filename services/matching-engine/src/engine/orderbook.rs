@@ -1,6 +1,6 @@
 use std::{cmp::Reverse, collections::{BTreeMap, HashMap, VecDeque}};
 use rust_decimal::Decimal;
-use crate::models::{Order, OrderId, Price, Quantity, Side};
+use crate::models::{Order, OrderId, Price, Quantity, QuoteQty, Side};
 
 pub struct OrderBook {
     // 매수 호가
@@ -64,7 +64,9 @@ impl OrderBook {
     /// 전량 체결시 index에서 제거
     pub fn fill(&mut self, order_id: &OrderId, qty: Quantity) {
         if let Some(order) = self.index.get_mut(order_id) {
-            order.fill(qty);
+            let price = order.price.unwrap();
+            let quote = QuoteQty::new(price.value() * qty.value());
+            order.fill(qty, quote);
 
             if order.is_fully_filled() {
                 self.index.remove(order_id);
