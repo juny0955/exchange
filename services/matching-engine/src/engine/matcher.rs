@@ -56,7 +56,7 @@ impl Matcher {
         let price = order.price.unwrap().value();
         let required = order.quantity.unwrap().value();
 
-        if !book.can_fully_fill(order.side.opposite(), price, required) {
+        if !book.can_fully_fill(order.side, price, required) {
             return EngineEvent::Canceled {
                 order_id: order.order_id,
                 reason: CancelReason::FokExpired,
