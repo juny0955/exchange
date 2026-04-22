@@ -14,7 +14,7 @@ pub enum TimeInForce {
     Fok,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OrderType {
     Limit,
     Market,
@@ -44,6 +44,13 @@ impl AccountId {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct TradeId(Uuid);
+impl TradeId {
+    pub fn new() -> Self { Self(Uuid::new_v4()) }
+    pub fn value(&self) -> Uuid { self.0 }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Price(Decimal);
 impl Price {
@@ -70,6 +77,14 @@ impl Quantity {
     pub fn value(&self) -> Decimal {
         self.0
     }
+
+    pub fn sub(&self, val: Quantity) -> Quantity {
+        Quantity::new(self.0 - val.value())
+    }
+
+    pub fn add(&self, val: Quantity) -> Quantity {
+        Quantity::new(self.0 + val.value())
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -85,5 +100,13 @@ impl QuoteQty {
 
     pub fn value(&self) -> Decimal {
         self.0
+    }
+
+    pub fn sub(&self, val: QuoteQty) -> QuoteQty {
+        QuoteQty::new(self.0 - val.value())
+    }
+
+    pub fn add(&self, val: QuoteQty) -> QuoteQty {
+        QuoteQty::new(self.0 + val.value())
     }
 }
