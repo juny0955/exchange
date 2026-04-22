@@ -19,14 +19,14 @@ impl SymbolWorker {
                 OrderCommand::Place(order) => Matcher::match_order(order, &mut self.order_book),
                 OrderCommand::Cancel { order_id, .. } => {
                     self.order_book.cancel(&order_id);
-                    
+
                     EngineEvent::Canceled {
                         order_id,
                         reason: CancelReason::UserRequest
                     }
-                } 
+                }
             };
-            
+
             let _ = self.event_sender.send(result);
         }
     }

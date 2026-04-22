@@ -55,7 +55,7 @@ impl Matcher {
     fn process_fok(order: Order, book: &mut OrderBook) -> EngineEvent {
         let price = order.price.unwrap().value();
         let required = order.quantity.unwrap().value();
-        
+
         if !book.can_fully_fill(order.side.opposite(), price, required) {
             return EngineEvent::Canceled {
                 order_id: order.order_id,
