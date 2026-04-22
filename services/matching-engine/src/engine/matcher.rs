@@ -1,4 +1,4 @@
-use crate::engine::event::EngineEvent;
+use crate::engine::event::{CancelReason, EngineEvent};
 use crate::engine::orderbook::OrderBook;
 use crate::models::{AccountId, Order, OrderId, OrderType, Price, Quantity, QuoteQty, Side, TimeInForce, Trade};
 
@@ -57,7 +57,10 @@ impl Matcher {
         let required = order.quantity.unwrap().value();
         
         if !book.can_fully_fill(order.side.opposite(), price, required) {
-            return EngineEvent::Canceled(order.order_id);
+            return EngineEvent::Canceled {
+                order_id: order.order_id,
+                reason: CancelReason::FokExpired,
+            }
         }
         Self::process_match(order, book, false)
     }
@@ -68,7 +71,10 @@ impl Matcher {
     fn process_fok_quote(order: Order, book: &mut OrderBook) -> EngineEvent {
         let required_quote = order.quote_qty.unwrap();
         if !book.can_fully_fill_quote(required_quote.value()) {
-            return EngineEvent::Canceled(order.order_id); // TODO 잔량 부족으로 인한 취소 명시
+            return EngineEvent::Canceled {
+                order_id: order.order_id,
+                reason: CancelReason::FokExpired,
+            }
         }
 
         let mut trades = Vec::new();
