@@ -19,6 +19,7 @@ impl OrderBook {
         }
     }
 
+    /// 지정가 주문을 호가에 등록한다
     pub fn add(&mut self, order: Order) {
         let order_id = order.order_id;
         let side = order.side;
@@ -71,6 +72,7 @@ impl OrderBook {
         }
     }
 
+    /// FOK 가능 여부를 체크한다
     pub fn can_fully_fill(&self, side: Side, price_limit: Decimal, required: Decimal) -> bool {
         let mut acc = Decimal::ZERO;
         match side {
@@ -94,6 +96,18 @@ impl OrderBook {
         false
     }
 
+    /// 시장가 매수용 FOK 가능 여부를 체크한다
+    pub fn can_fully_fill_quote(&self, required: Decimal) -> bool {
+        let mut acc = Decimal::ZERO;
+        for (price, queue) in &self.asks {
+            if self.has_enough_quote_in_queue(queue, price.value(), &mut acc, required) {
+                return true;
+            }
+        }
+        false
+    }
+
+    // 최우선 호가를 반환한다
     fn get_best<'a, K>(
         book: &mut BTreeMap<K, VecDeque<OrderId>>,
         index: &'a HashMap<OrderId, Order>
@@ -121,6 +135,7 @@ impl OrderBook {
         }
     }
 
+    // 해당 가격대의 queue에서 누적 수량이 required에 도달하는지 확인한다
     fn has_enough_quantity_in_queue(&self, queue: &VecDeque<OrderId>, acc: &mut Decimal, required: Decimal) -> bool {
         for order_id in queue {
             if let Some(order) = self.index.get(order_id) {
@@ -128,7 +143,17 @@ impl OrderBook {
                 if *acc >= required { return true }
             }
         }
+        false
+    }
 
+    /// 해당 가격대의 queue에서 누석 금액이 required에 도달하는지 확인한다
+    fn has_enough_quote_in_queue(&self, queue: &VecDeque<OrderId>, price: Decimal, acc: &mut Decimal, required: Decimal) -> bool {
+        for order_id in queue {
+            if let Some(order) = self.index.get(order_id) {
+                *acc += order.remaining_qty().value() * price;
+                if *acc >= required { return true }
+            }
+        }
         false
     }
 }
