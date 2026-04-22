@@ -1,3 +1,5 @@
+use rust_decimal::Decimal;
+
 use crate::engine::event::{CancelReason, EngineEvent};
 use crate::engine::orderbook::OrderBook;
 use crate::models::{AccountId, Order, OrderId, OrderType, Price, Quantity, QuoteQty, Side, TimeInForce, Trade};
@@ -14,14 +16,14 @@ impl Matcher {
     pub fn match_order(order: Order, book: &mut OrderBook) -> EngineEvent {
         if order.order_type == OrderType::Market {
             match order.side {
-                Side::Buy => Self::process_fok_quote(order, book),
-                Side::Sell => Self::process_fok(order, book),
+                Side::Buy => Self::process_market_buy(order, book),
+                Side::Sell => Self::process_market_sell(order, book),
             }
         } else {
             match order.tif {
                 TimeInForce::Gtc => Self::process_match(order, book, true),
                 TimeInForce::Ioc => Self::process_match(order, book, false),
-                TimeInForce::Fok => Self::process_fok(order, book),
+                TimeInForce::Fok => Self::process_limit_fok(order, book),
             }
         }
     }
@@ -51,16 +53,13 @@ impl Matcher {
         EngineEvent::Matched(trades)
     }
 
-    /// FOK 전용 Processor
-    fn process_fok(order: Order, book: &mut OrderBook) -> EngineEvent {
+    /// LIMIT 주문 FOK 전용
+    fn process_limit_fok(order: Order, book: &mut OrderBook) -> EngineEvent {
         let price = order.price.unwrap().value();
         let required = order.quantity.unwrap().value();
 
         if !book.can_fully_fill(order.side, price, required) {
-            return EngineEvent::Canceled {
-                order_id: order.order_id,
-                reason: CancelReason::FokExpired,
-            }
+            return EngineEvent::Canceled { order_id: order.order_id, reason: CancelReason::FokExpired };
         }
         Self::process_match(order, book, false)
     }
@@ -68,13 +67,10 @@ impl Matcher {
     /// 시장가 매수(FOK) 전용
     ///
     /// 금액 기준 전량 체결 검증 후 처리
-    fn process_fok_quote(order: Order, book: &mut OrderBook) -> EngineEvent {
+    fn process_market_buy(order: Order, book: &mut OrderBook) -> EngineEvent {
         let required_quote = order.quote_qty.unwrap();
         if !book.can_fully_fill_quote(required_quote.value()) {
-            return EngineEvent::Canceled {
-                order_id: order.order_id,
-                reason: CancelReason::FokExpired,
-            }
+            return EngineEvent::Canceled { order_id: order.order_id, reason: CancelReason::FokExpired };
         }
 
         let mut trades = Vec::new();
@@ -103,6 +99,17 @@ impl Matcher {
         }
 
         EngineEvent::Matched(trades)
+    }
+
+    /// 시장가 매도(FOK) 전용
+    fn process_market_sell(order: Order, book: &mut OrderBook) -> EngineEvent {
+        let required = order.quantity.unwrap().value();
+
+        if !book.can_fully_fill(order.side, Decimal::ZERO, required) {
+            return EngineEvent::Canceled { order_id: order.order_id, reason: CancelReason::FokExpired };
+        }
+
+        Self::process_match(order, book, false)
     }
 
     // 반대편 최우선 호가 MakerInfo로 변환
