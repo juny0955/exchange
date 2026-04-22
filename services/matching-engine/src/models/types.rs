@@ -1,10 +1,20 @@
 use rust_decimal::Decimal;
 use uuid::Uuid;
+use crate::models::Side::{Buy, Sell};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Side {
     Buy,
     Sell,
+}
+
+impl Side {
+    pub fn opposite(&self) -> Side {
+        match self {
+            Buy => Sell,
+            Sell => Buy,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
