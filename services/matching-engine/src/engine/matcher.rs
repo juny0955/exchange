@@ -10,7 +10,6 @@ struct MakerInfo {
 }
 
 pub struct Matcher;
-
 impl Matcher {
     pub fn match_order(order: Order, book: &mut OrderBook) -> EngineEvent {
         if order.order_type == OrderType::Market {
@@ -51,8 +50,10 @@ impl Matcher {
 
     /// FOK 전용 Processor
     fn process_fok(order: Order, book: &mut OrderBook) -> EngineEvent {
-        let required = order.quantity.unwrap();
-        if !book.can_fully_fill(order.side.opposite(), order.price.unwrap(), required) {
+        let price = order.price.unwrap().value();
+        let required = order.quantity.unwrap().value();
+        
+        if !book.can_fully_fill(order.side.opposite(), price, required) {
             return EngineEvent::Canceled(order.order_id);
         }
         Self::process_match(order, book, false)

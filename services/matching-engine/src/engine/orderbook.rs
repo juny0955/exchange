@@ -5,7 +5,6 @@ use crate::models::{Order, OrderId, Price, Quantity, Side};
 pub struct OrderBook {
     // 매수 호가
     bids: BTreeMap<Reverse<Price>, VecDeque<OrderId>>,
-
     // 매도 호가
     asks: BTreeMap<Price, VecDeque<OrderId>>,
     index: HashMap<OrderId, Order>,
@@ -72,28 +71,22 @@ impl OrderBook {
         }
     }
 
-    pub fn can_fully_fill(&self, side: Side, price_limit: Price, required: Quantity) -> bool {
+    pub fn can_fully_fill(&self, side: Side, price_limit: Decimal, required: Decimal) -> bool {
         let mut acc = Decimal::ZERO;
         match side {
             Side::Buy => {
                 for (price, queue) in &self.asks {
-                    if price.value() > price_limit.value() { break }
-                    for order_id in queue {
-                        if let Some(order) = self.index.get(order_id) {
-                            acc += order.remaining_qty().value();
-                            if acc >= required.value() { return true }
-                        }
+                    if price.value() > price_limit { break }
+                    if self.has_enough_quantity_in_queue(queue, &mut acc, required) {
+                        return true;
                     }
                 }
             }
             Side::Sell => {
                 for (price, queue) in &self.bids {
-                    if price.0.value() < price_limit.value() { break }
-                    for order_id in queue {
-                        if let Some(order) = self.index.get(order_id) {
-                            acc += order.remaining_qty().value();
-                            if acc >= required.value() { return true }
-                        }
+                    if price.0.value() < price_limit { break }
+                    if self.has_enough_quantity_in_queue(queue, &mut acc, required) {
+                        return true;
                     }
                 }
             }
@@ -126,5 +119,16 @@ impl OrderBook {
                 book.remove(&price);
             }
         }
+    }
+
+    fn has_enough_quantity_in_queue(&self, queue: &VecDeque<OrderId>, acc: &mut Decimal, required: Decimal) -> bool {
+        for order_id in queue {
+            if let Some(order) = self.index.get(order_id) {
+                *acc += order.remaining_qty().value();
+                if *acc >= required { return true }
+            }
+        }
+
+        false
     }
 }
