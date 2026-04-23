@@ -6,6 +6,7 @@ pub struct TradeParticipant {
     pub order_id: OrderId,
 }
 
+#[derive(Debug)]
 pub struct Trade {
     pub trade_id: TradeId,
     pub symbol: Symbol,

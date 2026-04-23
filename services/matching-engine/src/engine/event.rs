@@ -8,6 +8,7 @@ pub enum EngineEvent {
     },
 }
 
+#[derive(Debug)]
 pub enum CancelReason {
     UserRequest,
     IocExpired,
