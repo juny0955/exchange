@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crossbeam::channel::Sender;
 
+use crate::engine::error::EngineError;
 use crate::{engine::command::OrderCommand, models::Symbol};
 
 pub struct EngineRouter {
@@ -19,9 +20,12 @@ impl EngineRouter {
         self.workers.entry(symbol).or_insert(worker);
     }
 
-    pub fn dispatch(&self, command: OrderCommand) {
-        if let Some(worker) = self.workers.get(command.symbol()) {
-            worker.send(command).ok();
+    pub fn dispatch(&self, command: OrderCommand) -> Result<(), EngineError> {
+        match self.workers.get(command.symbol()) {
+            Some(worker) => worker
+                .try_send(command)
+                .map_err(|_| EngineError::ChannelFull),
+            None => Err(EngineError::SymbolNotFound),
         }
     }
 }
