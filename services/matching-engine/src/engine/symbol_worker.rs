@@ -15,19 +15,21 @@ pub struct SymbolWorker {
 impl SymbolWorker {
     pub fn run(mut self) {
         while let Ok(command) = self.receiver.recv() {
-            let result = match command {
+            let results = match command {
                 OrderCommand::Place(order) => Matcher::match_order(order, &mut self.order_book),
                 OrderCommand::Cancel { order_id, .. } => {
                     self.order_book.cancel(&order_id);
 
-                    EngineEvent::Canceled {
+                    vec![EngineEvent::Canceled {
                         order_id,
                         reason: CancelReason::UserRequest,
-                    }
+                    }]
                 }
             };
 
-            let _ = self.event_sender.send(result);
+            for event in results {
+                let _ = self.event_sender.send(event);
+            }
         }
     }
 }

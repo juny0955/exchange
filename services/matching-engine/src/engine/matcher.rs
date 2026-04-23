@@ -25,7 +25,7 @@ impl MakerInfo {
 
 pub struct Matcher;
 impl Matcher {
-    pub fn match_order(order: Order, book: &mut OrderBook) -> EngineEvent {
+    pub fn match_order(order: Order, book: &mut OrderBook) -> Vec<EngineEvent> {
         if order.order_type == OrderType::Market {
             match order.side {
                 Side::Buy => Self::process_market_buy(order, book),
@@ -43,7 +43,7 @@ impl Matcher {
     /// GTC/IOC 공통 매칭 루프
     ///
     /// resting=true 일시 미체결 잔량 호가 등록
-    fn process_match(order: Order, book: &mut OrderBook, resting: bool) -> EngineEvent {
+    fn process_match(order: Order, book: &mut OrderBook, resting: bool) -> Vec<EngineEvent> {
         let mut taker = order;
         let mut trades = Vec::new();
 
@@ -56,41 +56,53 @@ impl Matcher {
             trades.push(trade);
 
             if taker.is_fully_filled() {
-                return EngineEvent::Matched(trades);
+                return vec![EngineEvent::Matched(trades)];
             }
         }
 
-        if resting && !taker.is_fully_filled() {
-            book.add(taker);
+        let mut events = Vec::new();
+        if !trades.is_empty() {
+            events.push(EngineEvent::Matched(trades));
         }
 
-        EngineEvent::Matched(trades)
+        if resting {
+            book.add(taker);
+        } else {
+            events.push(EngineEvent::Canceled {
+                order_id: taker.order_id,
+                reason: CancelReason::IocExpired,
+            });
+        }
+
+        events
     }
 
     /// LIMIT 주문 FOK 전용
-    fn process_limit_fok(order: Order, book: &mut OrderBook) -> EngineEvent {
+    fn process_limit_fok(order: Order, book: &mut OrderBook) -> Vec<EngineEvent> {
         let price = order.price.unwrap().value();
         let required = order.quantity.unwrap().value();
 
         if !book.can_fully_fill(order.side, price, required) {
-            return EngineEvent::Canceled {
+            return vec![EngineEvent::Canceled {
                 order_id: order.order_id,
                 reason: CancelReason::FokExpired,
-            };
+            }];
         }
+        // 사전 검사 통과로 전량 체결 보장
         Self::process_match(order, book, false)
     }
 
     /// 시장가 매수(FOK) 전용
     ///
     /// 금액 기준 전량 체결 검증 후 처리
-    fn process_market_buy(order: Order, book: &mut OrderBook) -> EngineEvent {
+    fn process_market_buy(order: Order, book: &mut OrderBook) -> Vec<EngineEvent> {
         let required_quote = order.quote_qty.unwrap();
+
         if !book.can_fully_fill_quote(required_quote.value()) {
-            return EngineEvent::Canceled {
+            return vec![EngineEvent::Canceled {
                 order_id: order.order_id,
                 reason: CancelReason::FokExpired,
-            };
+            }];
         }
 
         let mut taker = order;
@@ -122,20 +134,20 @@ impl Matcher {
             ));
         }
 
-        EngineEvent::Matched(trades)
+        vec![EngineEvent::Matched(trades)]
     }
 
     /// 시장가 매도(FOK) 전용
-    fn process_market_sell(order: Order, book: &mut OrderBook) -> EngineEvent {
+    fn process_market_sell(order: Order, book: &mut OrderBook) -> Vec<EngineEvent> {
         let required = order.quantity.unwrap().value();
 
         if !book.can_fully_fill(order.side, Decimal::ZERO, required) {
-            return EngineEvent::Canceled {
+            return vec![EngineEvent::Canceled {
                 order_id: order.order_id,
                 reason: CancelReason::FokExpired,
-            };
+            }];
         }
-
+        // 사전 검사 통과로 전량 체결 보장
         Self::process_match(order, book, false)
     }
 
@@ -145,7 +157,7 @@ impl Matcher {
             Side::Buy => book.best_bid(),
             Side::Sell => book.best_ask(),
         }
-        .map(|m| MakerInfo::new(m))
+        .map(MakerInfo::new)
     }
 
     // 체결 가능 여부 확인 - 시장가는 항상 true
