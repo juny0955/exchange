@@ -131,9 +131,13 @@ impl Matcher {
                 break;
             };
 
-            let max_qty = Quantity::new(remaining_quote.value() / maker.price.value());
-            let fill_qty = maker.remaining_qty.min(max_qty);
-            let fill_quote = QuoteQty::new(maker.price.value() * fill_qty.value());
+            let max_qty = Quantity::new((remaining_quote.value() / maker.price.value()).floor());
+            let (fill_qty, fill_quote) = if maker.remaining_qty <= max_qty {
+                let fq = QuoteQty::new(maker.price.value() * maker.remaining_qty.value());
+                (maker.remaining_qty, fq)
+            } else {
+                (max_qty, remaining_quote)
+            };
 
             book.fill(&maker.order_id, fill_qty);
             taker.fill(fill_qty, fill_quote);
