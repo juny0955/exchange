@@ -212,3 +212,270 @@ impl Matcher {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::orderbook::OrderBook;
+    use crate::models::{AccountId, OrderKind, Price, Quantity, QuoteQty, Symbol, TimeInForce};
+    use rust_decimal::Decimal;
+    use uuid::Uuid;
+
+    fn btc_usdt() -> Symbol {
+        Symbol { base_asset: "BTC".into(), quote_asset: "USDT".into() }
+    }
+
+    fn limit_order(side: Side, price: i64, qty: i64, tif: TimeInForce) -> Order {
+        Order {
+            order_id: OrderId::new(Uuid::new_v4()),
+            account_id: AccountId::new(Uuid::new_v4()),
+            symbol: btc_usdt(),
+            side,
+            kind: OrderKind::Limit {
+                price: Price::new(Decimal::from(price)),
+                quantity: Quantity::new(Decimal::from(qty)),
+                tif,
+            },
+            filled_qty: Quantity::zero(),
+            filled_quote_qty: QuoteQty::zero(),
+        }
+    }
+
+    fn market_buy_order(quote: i64) -> Order {
+        Order {
+            order_id: OrderId::new(Uuid::new_v4()),
+            account_id: AccountId::new(Uuid::new_v4()),
+            symbol: btc_usdt(),
+            side: Side::Buy,
+            kind: OrderKind::MarketBuy {
+                quote_qty: QuoteQty::new(Decimal::from(quote)),
+            },
+            filled_qty: Quantity::zero(),
+            filled_quote_qty: QuoteQty::zero(),
+        }
+    }
+
+    fn market_sell_order(qty: i64) -> Order {
+        Order {
+            order_id: OrderId::new(Uuid::new_v4()),
+            account_id: AccountId::new(Uuid::new_v4()),
+            symbol: btc_usdt(),
+            side: Side::Sell,
+            kind: OrderKind::MarketSell {
+                quantity: Quantity::new(Decimal::from(qty)),
+            },
+            filled_qty: Quantity::zero(),
+            filled_quote_qty: QuoteQty::zero(),
+        }
+    }
+
+    fn matched_trades(events: Vec<EngineEvent>) -> Vec<Trade> {
+        events
+            .into_iter()
+            .find_map(|e| match e {
+                EngineEvent::Matched(trades) => Some(trades),
+                _ => None,
+            })
+            .unwrap_or_default()
+    }
+
+    fn cancel_reason(events: &[EngineEvent]) -> Option<&CancelReason> {
+        events.iter().find_map(|e| match e {
+            EngineEvent::Canceled { reason, .. } => Some(reason),
+            _ => None,
+        })
+    }
+
+    // ── GTC ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn gtc_buy_fully_matches_resting_ask() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 100, 5, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(limit_order(Side::Buy, 100, 5, TimeInForce::Gtc), &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades.len(), 1);
+        assert_eq!(trades[0].price, Price::new(Decimal::from(100)));
+        assert_eq!(trades[0].quantity, Quantity::new(Decimal::from(5)));
+        assert!(book.best_ask().is_none());
+    }
+
+    #[test]
+    fn gtc_buy_partial_fill_rests_remainder_in_book() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 100, 3, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(limit_order(Side::Buy, 100, 5, TimeInForce::Gtc), &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades[0].quantity, Quantity::new(Decimal::from(3)));
+        assert!(book.best_bid().is_some());
+        assert!(book.best_ask().is_none());
+    }
+
+    #[test]
+    fn gtc_buy_price_miss_rests_in_book_no_trade() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 200, 5, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(limit_order(Side::Buy, 100, 5, TimeInForce::Gtc), &mut book);
+
+        assert!(matched_trades(events).is_empty());
+        assert!(book.best_bid().is_some());
+    }
+
+    // ── IOC ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn ioc_buy_fully_matches() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 100, 5, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(limit_order(Side::Buy, 100, 5, TimeInForce::Ioc), &mut book);
+
+        assert_eq!(matched_trades(events).len(), 1);
+    }
+
+    #[test]
+    fn ioc_buy_partial_fill_cancels_remainder() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 100, 3, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(limit_order(Side::Buy, 100, 5, TimeInForce::Ioc), &mut book);
+
+        assert!(events.iter().any(|e| matches!(e, EngineEvent::Matched(_))));
+        assert!(matches!(cancel_reason(&events), Some(CancelReason::IocExpired)));
+        assert!(book.best_bid().is_none());
+    }
+
+    #[test]
+    fn ioc_buy_no_match_immediately_canceled() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 200, 5, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(limit_order(Side::Buy, 100, 5, TimeInForce::Ioc), &mut book);
+
+        assert!(matches!(cancel_reason(&events), Some(CancelReason::IocExpired)));
+        assert!(book.best_bid().is_none());
+    }
+
+    // ── Limit FOK ────────────────────────────────────────────────────────────
+
+    #[test]
+    fn limit_fok_buy_fully_fills() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 100, 5, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(limit_order(Side::Buy, 100, 5, TimeInForce::Fok), &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades.len(), 1);
+        assert_eq!(trades[0].quantity, Quantity::new(Decimal::from(5)));
+    }
+
+    #[test]
+    fn limit_fok_buy_insufficient_qty_canceled() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 100, 3, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(limit_order(Side::Buy, 100, 5, TimeInForce::Fok), &mut book);
+
+        assert!(matches!(cancel_reason(&events), Some(CancelReason::FokExpired)));
+    }
+
+    #[test]
+    fn limit_fok_buy_price_out_of_range_canceled() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 200, 5, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(limit_order(Side::Buy, 100, 5, TimeInForce::Fok), &mut book);
+
+        assert!(matches!(cancel_reason(&events), Some(CancelReason::FokExpired)));
+    }
+
+    // ── Market Buy ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn market_buy_fills_with_quote_amount() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 100, 10, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(market_buy_order(500), &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades.len(), 1);
+        assert_eq!(trades[0].quote_qty, QuoteQty::new(Decimal::from(500)));
+        assert_eq!(trades[0].quantity, Quantity::new(Decimal::from(5)));
+    }
+
+    #[test]
+    fn market_buy_insufficient_quote_canceled() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 100, 2, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(market_buy_order(500), &mut book);
+
+        assert!(matches!(cancel_reason(&events), Some(CancelReason::FokExpired)));
+    }
+
+    // ── Market Sell ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn market_sell_fully_fills() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Buy, 100, 10, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(market_sell_order(5), &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades.len(), 1);
+        assert_eq!(trades[0].quantity, Quantity::new(Decimal::from(5)));
+        assert_eq!(trades[0].price, Price::new(Decimal::from(100)));
+    }
+
+    #[test]
+    fn market_sell_insufficient_qty_canceled() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Buy, 100, 3, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(market_sell_order(5), &mut book);
+
+        assert!(matches!(cancel_reason(&events), Some(CancelReason::FokExpired)));
+    }
+
+    // ── Trade 계정 매핑 ──────────────────────────────────────────────────────
+
+    #[test]
+    fn buy_taker_is_assigned_as_buyer_in_trade() {
+        let mut book = OrderBook::new();
+        let maker = limit_order(Side::Sell, 100, 5, TimeInForce::Gtc);
+        let maker_account = maker.account_id;
+        book.add(maker);
+
+        let taker = limit_order(Side::Buy, 100, 5, TimeInForce::Gtc);
+        let taker_account = taker.account_id;
+        let events = Matcher::match_order(taker, &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades[0].buy_account_id, taker_account);
+        assert_eq!(trades[0].sell_account_id, maker_account);
+    }
+
+    #[test]
+    fn sell_taker_is_assigned_as_seller_in_trade() {
+        let mut book = OrderBook::new();
+        let maker = limit_order(Side::Buy, 100, 5, TimeInForce::Gtc);
+        let maker_account = maker.account_id;
+        book.add(maker);
+
+        let taker = limit_order(Side::Sell, 100, 5, TimeInForce::Gtc);
+        let taker_account = taker.account_id;
+        let events = Matcher::match_order(taker, &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades[0].sell_account_id, taker_account);
+        assert_eq!(trades[0].buy_account_id, maker_account);
+    }
+}
