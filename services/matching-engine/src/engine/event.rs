@@ -2,9 +2,9 @@ use crate::models::{OrderId, Trade};
 
 pub enum EngineEvent {
     Matched(Vec<Trade>),
-    Canceled{
+    Canceled {
         order_id: OrderId,
-        reason: CancelReason
+        reason: CancelReason,
     },
 }
 

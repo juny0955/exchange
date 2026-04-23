@@ -9,7 +9,7 @@ pub struct SymbolWorker {
     symbol: Symbol,
     order_book: OrderBook,
     receiver: Receiver<OrderCommand>,
-    event_sender: Sender<EngineEvent>
+    event_sender: Sender<EngineEvent>,
 }
 
 impl SymbolWorker {
@@ -22,7 +22,7 @@ impl SymbolWorker {
 
                     EngineEvent::Canceled {
                         order_id,
-                        reason: CancelReason::UserRequest
+                        reason: CancelReason::UserRequest,
                     }
                 }
             };

@@ -2,13 +2,25 @@ use rust_decimal::Decimal;
 
 use crate::engine::event::{CancelReason, EngineEvent};
 use crate::engine::orderbook::OrderBook;
-use crate::models::{AccountId, Order, OrderId, OrderType, Price, Quantity, QuoteQty, Side, TimeInForce, Trade};
+use crate::models::{
+    AccountId, Order, OrderId, OrderType, Price, Quantity, QuoteQty, Side, TimeInForce, Trade,
+};
 
 struct MakerInfo {
     order_id: OrderId,
     account_id: AccountId,
     price: Price,
     remaining_qty: Quantity,
+}
+impl MakerInfo {
+    fn new(order: &Order) -> Self {
+        Self {
+            order_id: order.order_id,
+            account_id: order.account_id,
+            price: order.price.unwrap(),
+            remaining_qty: order.remaining_qty(),
+        }
+    }
 }
 
 pub struct Matcher;
@@ -43,10 +55,12 @@ impl Matcher {
             let trade = Self::execute_fill(&mut taker, maker, book);
             trades.push(trade);
 
-            if taker.is_fully_filled() { return EngineEvent::Matched(trades) }
+            if taker.is_fully_filled() {
+                return EngineEvent::Matched(trades);
+            }
         }
 
-        if resting && !taker.is_fully_filled(){
+        if resting && !taker.is_fully_filled() {
             book.add(taker);
         }
 
@@ -59,7 +73,10 @@ impl Matcher {
         let required = order.quantity.unwrap().value();
 
         if !book.can_fully_fill(order.side, price, required) {
-            return EngineEvent::Canceled { order_id: order.order_id, reason: CancelReason::FokExpired };
+            return EngineEvent::Canceled {
+                order_id: order.order_id,
+                reason: CancelReason::FokExpired,
+            };
         }
         Self::process_match(order, book, false)
     }
@@ -70,7 +87,10 @@ impl Matcher {
     fn process_market_buy(order: Order, book: &mut OrderBook) -> EngineEvent {
         let required_quote = order.quote_qty.unwrap();
         if !book.can_fully_fill_quote(required_quote.value()) {
-            return EngineEvent::Canceled { order_id: order.order_id, reason: CancelReason::FokExpired };
+            return EngineEvent::Canceled {
+                order_id: order.order_id,
+                reason: CancelReason::FokExpired,
+            };
         }
 
         let mut taker = order;
@@ -78,7 +98,9 @@ impl Matcher {
         let mut remaining_quote = required_quote;
 
         while remaining_quote > QuoteQty::zero() {
-            let Some(maker) = Self::get_maker_info(Side::Sell, book) else { break };
+            let Some(maker) = Self::get_maker_info(Side::Sell, book) else {
+                break;
+            };
 
             let max_qty = Quantity::new(remaining_quote.value() / maker.price.value());
             let fill_qty = maker.remaining_qty.min(max_qty);
@@ -96,7 +118,7 @@ impl Matcher {
                 maker.order_id,
                 maker.price,
                 fill_qty,
-                fill_quote
+                fill_quote,
             ));
         }
 
@@ -108,7 +130,10 @@ impl Matcher {
         let required = order.quantity.unwrap().value();
 
         if !book.can_fully_fill(order.side, Decimal::ZERO, required) {
-            return EngineEvent::Canceled { order_id: order.order_id, reason: CancelReason::FokExpired };
+            return EngineEvent::Canceled {
+                order_id: order.order_id,
+                reason: CancelReason::FokExpired,
+            };
         }
 
         Self::process_match(order, book, false)
@@ -119,13 +144,8 @@ impl Matcher {
         match side {
             Side::Buy => book.best_bid(),
             Side::Sell => book.best_ask(),
-        }.map(|m| MakerInfo {
-                order_id: m.order_id,
-                account_id: m.account_id,
-                price: m.price.unwrap(),
-                remaining_qty: m.remaining_qty(),
-            }
-        )
+        }
+        .map(|m| MakerInfo::new(m))
     }
 
     // 체결 가능 여부 확인 - 시장가는 항상 true
@@ -134,8 +154,8 @@ impl Matcher {
             Some(taker_price) => match taker.side {
                 Side::Buy => taker_price >= maker_price,
                 Side::Sell => taker_price <= maker_price,
-            }
-            None => true
+            },
+            None => true,
         }
     }
 
@@ -148,10 +168,29 @@ impl Matcher {
         taker.fill(fill_qty, quote_qty);
 
         let (buy_account_id, buy_order_id, sell_account_id, sell_order_id) = match taker.side {
-            Side::Buy => (taker.account_id, taker.order_id, maker.account_id, maker.order_id),
-            Side::Sell => (maker.account_id, maker.order_id, taker.account_id, taker.order_id),
+            Side::Buy => (
+                taker.account_id,
+                taker.order_id,
+                maker.account_id,
+                maker.order_id,
+            ),
+            Side::Sell => (
+                maker.account_id,
+                maker.order_id,
+                taker.account_id,
+                taker.order_id,
+            ),
         };
 
-        Trade::new(taker.symbol.clone(), buy_account_id, buy_order_id, sell_account_id, sell_order_id, maker.price, fill_qty, quote_qty)
+        Trade::new(
+            taker.symbol.clone(),
+            buy_account_id,
+            buy_order_id,
+            sell_account_id,
+            sell_order_id,
+            maker.price,
+            fill_qty,
+            quote_qty,
+        )
     }
 }

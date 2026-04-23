@@ -1,5 +1,5 @@
-use std::time::Instant;
 use crate::models::{AccountId, OrderId, Price, Quantity, QuoteQty, Symbol, TradeId};
+use std::time::Instant;
 
 pub struct Trade {
     trade_id: TradeId,
@@ -35,7 +35,7 @@ impl Trade {
             price,
             quantity,
             quote_qty,
-            trade_at: Instant::now()
+            trade_at: Instant::now(),
         }
     }
 }

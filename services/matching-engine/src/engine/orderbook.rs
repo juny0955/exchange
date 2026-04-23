@@ -1,6 +1,9 @@
-use std::{cmp::Reverse, collections::{BTreeMap, HashMap, VecDeque}};
-use rust_decimal::Decimal;
 use crate::models::{Order, OrderId, Price, Quantity, QuoteQty, Side};
+use rust_decimal::Decimal;
+use std::{
+    cmp::Reverse,
+    collections::{BTreeMap, HashMap, VecDeque},
+};
 
 pub struct OrderBook {
     // 매수 호가
@@ -32,12 +35,9 @@ impl OrderBook {
                     .entry(Reverse(price))
                     .or_default()
                     .push_back(order_id);
-            },
+            }
             Side::Sell => {
-                self.asks
-                    .entry(price)
-                    .or_default()
-                    .push_back(order_id);
+                self.asks.entry(price).or_default().push_back(order_id);
             }
         }
     }
@@ -80,7 +80,9 @@ impl OrderBook {
         match side {
             Side::Buy => {
                 for (price, queue) in &self.asks {
-                    if price.value() > price_limit { break }
+                    if price.value() > price_limit {
+                        break;
+                    }
                     if self.has_enough_quantity_in_queue(queue, &mut acc, required) {
                         return true;
                     }
@@ -88,7 +90,9 @@ impl OrderBook {
             }
             Side::Sell => {
                 for (price, queue) in &self.bids {
-                    if price.0.value() < price_limit { break }
+                    if price.0.value() < price_limit {
+                        break;
+                    }
                     if self.has_enough_quantity_in_queue(queue, &mut acc, required) {
                         return true;
                     }
@@ -112,10 +116,10 @@ impl OrderBook {
     // 최우선 호가를 반환한다
     fn get_best<'a, K>(
         book: &mut BTreeMap<K, VecDeque<OrderId>>,
-        index: &'a HashMap<OrderId, Order>
+        index: &'a HashMap<OrderId, Order>,
     ) -> Option<&'a Order>
     where
-        K: Ord + Copy
+        K: Ord + Copy,
     {
         loop {
             // 최상위 호가 확인
@@ -138,22 +142,37 @@ impl OrderBook {
     }
 
     // 해당 가격대의 queue에서 누적 수량이 required에 도달하는지 확인한다
-    fn has_enough_quantity_in_queue(&self, queue: &VecDeque<OrderId>, acc: &mut Decimal, required: Decimal) -> bool {
+    fn has_enough_quantity_in_queue(
+        &self,
+        queue: &VecDeque<OrderId>,
+        acc: &mut Decimal,
+        required: Decimal,
+    ) -> bool {
         for order_id in queue {
             if let Some(order) = self.index.get(order_id) {
                 *acc += order.remaining_qty().value();
-                if *acc >= required { return true }
+                if *acc >= required {
+                    return true;
+                }
             }
         }
         false
     }
 
     /// 해당 가격대의 queue에서 누석 금액이 required에 도달하는지 확인한다
-    fn has_enough_quote_in_queue(&self, queue: &VecDeque<OrderId>, price: Decimal, acc: &mut Decimal, required: Decimal) -> bool {
+    fn has_enough_quote_in_queue(
+        &self,
+        queue: &VecDeque<OrderId>,
+        price: Decimal,
+        acc: &mut Decimal,
+        required: Decimal,
+    ) -> bool {
         for order_id in queue {
             if let Some(order) = self.index.get(order_id) {
                 *acc += order.remaining_qty().value() * price;
-                if *acc >= required { return true }
+                if *acc >= required {
+                    return true;
+                }
             }
         }
         false
@@ -162,18 +181,21 @@ impl OrderBook {
 
 #[cfg(test)]
 mod tests {
-    use rust_decimal::Decimal;
-    use uuid::Uuid;
+    use super::OrderBook;
     use crate::models::{
         AccountId, Order, OrderId, OrderType, Price, Quantity, QuoteQty, Side, Symbol, TimeInForce,
     };
-    use super::OrderBook;
+    use rust_decimal::Decimal;
+    use uuid::Uuid;
 
     fn make_order(id: Uuid, price: i64, qty: i64, side: Side) -> Order {
         Order {
             order_id: OrderId::new(id),
             account_id: AccountId::new(Uuid::new_v4()),
-            symbol: Symbol { base_asset: "BTC".into(), quote_asset: "USDT".into() },
+            symbol: Symbol {
+                base_asset: "BTC".into(),
+                quote_asset: "USDT".into(),
+            },
             side,
             order_type: OrderType::Limit,
             tif: TimeInForce::Gtc,
