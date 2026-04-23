@@ -3,7 +3,7 @@ use rust_decimal::Decimal;
 use crate::engine::event::{CancelReason, EngineEvent};
 use crate::engine::orderbook::OrderBook;
 use crate::models::{
-    AccountId, Order, OrderId, OrderType, Price, Quantity, QuoteQty, Side, TimeInForce, Trade,
+    AccountId, Order, OrderId, OrderKind, Price, Quantity, QuoteQty, Side, TimeInForce, Trade,
 };
 
 struct MakerInfo {
@@ -14,10 +14,15 @@ struct MakerInfo {
 }
 impl MakerInfo {
     fn new(order: &Order) -> Self {
+        let price = match &order.kind {
+            OrderKind::Limit { price, .. } => *price,
+            _ => unreachable!("지정가 주문만 호가에 존재합니다."),
+        };
+
         Self {
             order_id: order.order_id,
             account_id: order.account_id,
-            price: order.price.unwrap(),
+            price,
             remaining_qty: order.remaining_qty(),
         }
     }
@@ -26,17 +31,14 @@ impl MakerInfo {
 pub struct Matcher;
 impl Matcher {
     pub fn match_order(order: Order, book: &mut OrderBook) -> Vec<EngineEvent> {
-        if order.order_type == OrderType::Market {
-            match order.side {
-                Side::Buy => Self::process_market_buy(order, book),
-                Side::Sell => Self::process_market_sell(order, book),
-            }
-        } else {
-            match order.tif {
+        match order.kind {
+            OrderKind::MarketBuy { .. } => Self::process_market_buy(order, book),
+            OrderKind::MarketSell { .. } => Self::process_market_sell(order, book),
+            OrderKind::Limit { tif, .. } => match tif {
                 TimeInForce::Gtc => Self::process_match(order, book, true),
                 TimeInForce::Ioc => Self::process_match(order, book, false),
                 TimeInForce::Fok => Self::process_limit_fok(order, book),
-            }
+            },
         }
     }
 
@@ -79,10 +81,14 @@ impl Matcher {
 
     /// LIMIT 주문 FOK 전용
     fn process_limit_fok(order: Order, book: &mut OrderBook) -> Vec<EngineEvent> {
-        let price = order.price.unwrap().value();
-        let required = order.quantity.unwrap().value();
+        let (price, required) = match &order.kind {
+            OrderKind::Limit {
+                price, quantity, ..
+            } => (*price, *quantity),
+            _ => unreachable!("지정가 FOK 주문 전용"),
+        };
 
-        if !book.can_fully_fill(order.side, price, required) {
+        if !book.can_fully_fill(order.side, price.value(), required.value()) {
             return vec![EngineEvent::Canceled {
                 order_id: order.order_id,
                 reason: CancelReason::FokExpired,
@@ -96,7 +102,10 @@ impl Matcher {
     ///
     /// 금액 기준 전량 체결 검증 후 처리
     fn process_market_buy(order: Order, book: &mut OrderBook) -> Vec<EngineEvent> {
-        let required_quote = order.quote_qty.unwrap();
+        let required_quote = match &order.kind {
+            OrderKind::MarketBuy { quote_qty } => *quote_qty,
+            _ => unreachable!("시장가 매수 전용"),
+        };
 
         if !book.can_fully_fill_quote(required_quote.value()) {
             return vec![EngineEvent::Canceled {
@@ -139,9 +148,12 @@ impl Matcher {
 
     /// 시장가 매도(FOK) 전용
     fn process_market_sell(order: Order, book: &mut OrderBook) -> Vec<EngineEvent> {
-        let required = order.quantity.unwrap().value();
+        let required = match &order.kind {
+            OrderKind::MarketSell { quantity } => *quantity,
+            _ => unreachable!("시장가 매도 전용"),
+        };
 
-        if !book.can_fully_fill(order.side, Decimal::ZERO, required) {
+        if !book.can_fully_fill(order.side, Decimal::ZERO, required.value()) {
             return vec![EngineEvent::Canceled {
                 order_id: order.order_id,
                 reason: CancelReason::FokExpired,
@@ -162,12 +174,14 @@ impl Matcher {
 
     // 체결 가능 여부 확인 - 시장가는 항상 true
     fn can_match(taker: &Order, maker_price: Price) -> bool {
-        match taker.price {
-            Some(taker_price) => match taker.side {
-                Side::Buy => taker_price >= maker_price,
-                Side::Sell => taker_price <= maker_price,
+        match taker.kind {
+            OrderKind::Limit {
+                price: taker_price, ..
+            } => match taker.side {
+                Side::Buy => taker_price.value() >= maker_price.value(),
+                Side::Sell => taker_price.value() <= maker_price.value(),
             },
-            None => true,
+            _ => true,
         }
     }
 

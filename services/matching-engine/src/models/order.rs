@@ -1,6 +1,4 @@
-use crate::models::{
-    AccountId, OrderId, OrderType, Price, Quantity, QuoteQty, Side, Symbol, TimeInForce,
-};
+use crate::models::{AccountId, OrderId, OrderKind, Quantity, QuoteQty, Side, Symbol};
 
 #[derive(Debug, Clone)]
 pub struct Order {
@@ -9,12 +7,7 @@ pub struct Order {
     pub symbol: Symbol,
 
     pub side: Side,
-    pub order_type: OrderType,
-    pub tif: TimeInForce,
-
-    pub price: Option<Price>,
-    pub quantity: Option<Quantity>,
-    pub quote_qty: Option<QuoteQty>,
+    pub kind: OrderKind,
 
     pub filled_qty: Quantity,
     pub filled_quote_qty: QuoteQty,
@@ -26,11 +19,23 @@ impl Order {
         self.filled_quote_qty = self.filled_quote_qty.add(fill_quote);
     }
 
+    /// Limit / MarketSell 전용
     pub fn remaining_qty(&self) -> Quantity {
-        self.quantity.unwrap().sub(self.filled_qty)
+        match self.kind {
+            OrderKind::Limit { quantity, .. } | OrderKind::MarketSell { quantity } => {
+                quantity.sub(self.filled_qty)
+            }
+            OrderKind::MarketBuy { .. } => unreachable!("시장가 매수 주문은 수량이 없습니다."),
+        }
     }
 
+    /// Limit / MarketSell 전용
     pub fn is_fully_filled(&self) -> bool {
-        self.quantity.unwrap().value().eq(&self.filled_qty.value())
+        match &self.kind {
+            OrderKind::Limit { quantity, .. } | OrderKind::MarketSell { quantity } => {
+                *quantity == self.filled_qty
+            }
+            OrderKind::MarketBuy { .. } => unreachable!("시장가 매수 주문은 수량이 없습니다."),
+        }
     }
 }

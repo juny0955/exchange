@@ -16,7 +16,7 @@ impl Side {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TimeInForce {
     Gtc,
     Ioc,
@@ -24,9 +24,18 @@ pub enum TimeInForce {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum OrderType {
-    Limit,
-    Market,
+pub enum OrderKind {
+    Limit {
+        price: Price,
+        quantity: Quantity,
+        tif: TimeInForce,
+    },
+    MarketBuy {
+        quote_qty: QuoteQty,
+    },
+    MarketSell {
+        quantity: Quantity,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

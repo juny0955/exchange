@@ -1,4 +1,4 @@
-use crate::models::{Order, OrderId, Price, Quantity, QuoteQty, Side};
+use crate::models::{Order, OrderId, OrderKind, Price, Quantity, QuoteQty, Side};
 use rust_decimal::Decimal;
 use std::{
     cmp::Reverse,
@@ -26,7 +26,10 @@ impl OrderBook {
     pub fn add(&mut self, order: Order) {
         let order_id = order.order_id;
         let side = order.side;
-        let price = order.price.unwrap();
+        let price = match &order.kind {
+            OrderKind::Limit { price, .. } => *price,
+            _ => unreachable!("지정가 주문만 호가 등록이 가능합니다"),
+        };
 
         self.index.insert(order_id, order);
         match side {
@@ -64,7 +67,10 @@ impl OrderBook {
     /// 전량 체결시 index에서 제거
     pub fn fill(&mut self, order_id: &OrderId, qty: Quantity) {
         if let Some(order) = self.index.get_mut(order_id) {
-            let price = order.price.unwrap();
+            let price = match &order.kind {
+                OrderKind::Limit { price, .. } => *price,
+                _ => unreachable!("지정가 주문만 호가 등록이 가능합니다"),
+            };
             let quote = QuoteQty::new(price.value() * qty.value());
             order.fill(qty, quote);
 
@@ -183,7 +189,7 @@ impl OrderBook {
 mod tests {
     use super::OrderBook;
     use crate::models::{
-        AccountId, Order, OrderId, OrderType, Price, Quantity, QuoteQty, Side, Symbol, TimeInForce,
+        AccountId, Order, OrderId, OrderKind, Price, Quantity, QuoteQty, Side, Symbol, TimeInForce,
     };
     use rust_decimal::Decimal;
     use uuid::Uuid;
@@ -197,11 +203,11 @@ mod tests {
                 quote_asset: "USDT".into(),
             },
             side,
-            order_type: OrderType::Limit,
-            tif: TimeInForce::Gtc,
-            price: Some(Price::new(Decimal::from(price))),
-            quantity: Some(Quantity::new(Decimal::from(qty))),
-            quote_qty: None,
+            kind: OrderKind::Limit {
+                price: Price::new(Decimal::from(price)),
+                quantity: Quantity::new(Decimal::from(qty)),
+                tif: TimeInForce::Gtc,
+            },
             filled_qty: Quantity::zero(),
             filled_quote_qty: QuoteQty::zero(),
         }
