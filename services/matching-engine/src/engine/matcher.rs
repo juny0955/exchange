@@ -4,6 +4,7 @@ use crate::engine::event::{CancelReason, EngineEvent};
 use crate::engine::orderbook::OrderBook;
 use crate::models::{
     AccountId, Order, OrderId, OrderKind, Price, Quantity, QuoteQty, Side, TimeInForce, Trade,
+    TradeParticipant,
 };
 
 struct MakerInfo {
@@ -24,6 +25,13 @@ impl MakerInfo {
             account_id: order.account_id,
             price,
             remaining_qty: order.remaining_qty(),
+        }
+    }
+
+    fn as_participant(&self) -> TradeParticipant {
+        TradeParticipant {
+            account_id: self.account_id,
+            order_id: self.order_id,
         }
     }
 }
@@ -131,16 +139,7 @@ impl Matcher {
             taker.fill(fill_qty, fill_quote);
             remaining_quote = remaining_quote.sub(fill_quote);
 
-            trades.push(Trade::new(
-                taker.symbol.clone(),
-                taker.account_id,
-                taker.order_id,
-                maker.account_id,
-                maker.order_id,
-                maker.price,
-                fill_qty,
-                fill_quote,
-            ));
+            trades.push(Self::make_trade(&taker, maker, fill_qty, fill_quote));
         }
 
         vec![EngineEvent::Matched(trades)]
@@ -188,35 +187,28 @@ impl Matcher {
     // 단일 체결 실행 - taker/maker 수량 차감 및 Trade 생성
     fn execute_fill(taker: &mut Order, maker: MakerInfo, book: &mut OrderBook) -> Trade {
         let fill_qty = maker.remaining_qty.min(taker.remaining_qty());
-        let quote_qty = QuoteQty::new(maker.price.value() * fill_qty.value());
+        let fill_quote = QuoteQty::new(maker.price.value() * fill_qty.value());
 
         book.fill(&maker.order_id, fill_qty);
-        taker.fill(fill_qty, quote_qty);
+        taker.fill(fill_qty, fill_quote);
 
-        let (buy_account_id, buy_order_id, sell_account_id, sell_order_id) = match taker.side {
-            Side::Buy => (
-                taker.account_id,
-                taker.order_id,
-                maker.account_id,
-                maker.order_id,
-            ),
-            Side::Sell => (
-                maker.account_id,
-                maker.order_id,
-                taker.account_id,
-                taker.order_id,
-            ),
-        };
+        Self::make_trade(taker, maker, fill_qty, fill_quote)
+    }
 
+    fn make_trade(
+        taker: &Order,
+        maker: MakerInfo,
+        fill_qty: Quantity,
+        fill_quote: QuoteQty,
+    ) -> Trade {
         Trade::new(
             taker.symbol.clone(),
-            buy_account_id,
-            buy_order_id,
-            sell_account_id,
-            sell_order_id,
+            taker.side,
+            taker.as_participant(),
+            maker.as_participant(),
             maker.price,
             fill_qty,
-            quote_qty,
+            fill_quote,
         )
     }
 }

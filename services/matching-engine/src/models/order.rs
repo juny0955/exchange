@@ -1,4 +1,6 @@
-use crate::models::{AccountId, OrderId, OrderKind, Quantity, QuoteQty, Side, Symbol};
+use crate::models::{
+    AccountId, OrderId, OrderKind, Quantity, QuoteQty, Side, Symbol, TradeParticipant,
+};
 
 #[derive(Debug, Clone)]
 pub struct Order {
@@ -36,6 +38,13 @@ impl Order {
                 *quantity == self.filled_qty
             }
             OrderKind::MarketBuy { .. } => unreachable!("시장가 매수 주문은 수량이 없습니다."),
+        }
+    }
+
+    pub fn as_participant(&self) -> TradeParticipant {
+        TradeParticipant {
+            account_id: self.account_id,
+            order_id: self.order_id,
         }
     }
 }
