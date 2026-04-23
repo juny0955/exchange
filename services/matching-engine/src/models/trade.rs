@@ -36,7 +36,7 @@ impl Trade {
         };
 
         Self {
-            trade_id: TradeId::new(),
+            trade_id: TradeId::default(),
             symbol,
             buy_account_id: buy.account_id,
             buy_order_id: buy.order_id,

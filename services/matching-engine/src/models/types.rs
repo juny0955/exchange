@@ -65,11 +65,14 @@ impl AccountId {
 #[derive(Debug, Clone, Copy)]
 pub struct TradeId(Uuid);
 impl TradeId {
-    pub fn new() -> Self {
-        Self(Uuid::new_v4())
-    }
     pub fn value(&self) -> Uuid {
         self.0
+    }
+}
+
+impl Default for TradeId {
+    fn default() -> Self { 
+        Self ( Uuid::new_v4() )
     }
 }
 
