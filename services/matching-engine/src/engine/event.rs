@@ -1,5 +1,6 @@
 use crate::models::{OrderId, Trade};
 
+#[derive(Debug)]
 pub enum EngineEvent {
     Matched(Vec<Trade>),
     Canceled {
