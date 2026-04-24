@@ -71,8 +71,8 @@ impl TradeId {
 }
 
 impl Default for TradeId {
-    fn default() -> Self { 
-        Self ( Uuid::new_v4() )
+    fn default() -> Self {
+        Self(Uuid::new_v4())
     }
 }
 

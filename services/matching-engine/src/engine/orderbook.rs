@@ -6,9 +6,7 @@ use std::{
 };
 
 pub struct OrderBook {
-    // 매수 호가
     bids: BTreeMap<Reverse<Price>, VecDeque<OrderId>>,
-    // 매도 호가
     asks: BTreeMap<Price, VecDeque<OrderId>>,
     index: HashMap<OrderId, Order>,
 }
@@ -22,13 +20,12 @@ impl OrderBook {
         }
     }
 
-    /// 지정가 주문을 호가에 등록한다
     pub fn add(&mut self, order: Order) {
         let order_id = order.order_id;
         let side = order.side;
         let price = match &order.kind {
             OrderKind::Limit { price, .. } => *price,
-            _ => unreachable!("지정가 주문만 호가 등록이 가능합니다"),
+            _ => unreachable!("only limit orders can rest on the book"),
         };
 
         self.index.insert(order_id, order);
@@ -45,31 +42,23 @@ impl OrderBook {
         }
     }
 
-    /// 주문을 취소한다
-    ///
-    /// 즉시 호가에서 삭제하지않고 Index에서만 삭제 수행 (지연삭제)
     pub fn cancel(&mut self, order_id: &OrderId) {
         self.index.remove(order_id);
     }
 
-    /// 최상위 매도 호가를 가져온다
     pub fn best_ask(&mut self) -> Option<&Order> {
         Self::get_best(&mut self.asks, &self.index)
     }
 
-    /// 최상위 매수 호가를 가져온다
     pub fn best_bid(&mut self) -> Option<&Order> {
         Self::get_best(&mut self.bids, &self.index)
     }
 
-    /// Maker 주문을 갱신한다
-    ///
-    /// 전량 체결시 index에서 제거
     pub fn fill(&mut self, order_id: &OrderId, qty: Quantity) {
         if let Some(order) = self.index.get_mut(order_id) {
             let price = match &order.kind {
-                OrderKind::Limit { price, .. } => *price,
-                _ => unreachable!("지정가 주문만 호가 등록이 가능합니다"),
+                OrderKind::Limit { price, .. } => price,
+                _ => unreachable!("only limit orders can rest on the book"),
             };
             let quote = QuoteQty::new(price.value() * qty.value());
             order.fill(qty, quote);
@@ -80,7 +69,6 @@ impl OrderBook {
         }
     }
 
-    /// FOK 가능 여부를 체크한다
     pub fn can_fully_fill(&self, side: Side, price_limit: Decimal, required: Decimal) -> bool {
         let mut acc = Decimal::ZERO;
         match side {
@@ -108,25 +96,19 @@ impl OrderBook {
         false
     }
 
-    /// 시장가 매수용 FOK 가능 여부를 체크한다
     pub fn can_fully_fill_quote(&self, required: Decimal) -> bool {
         let mut remaining = required;
-        let mut acc = Decimal::ZERO;
         for (price, queue) in &self.asks {
-            for order_id in queue {
-                if let Some(order) = self.index.get(order_id) {
-                    let qty = (remaining / price.value()).floor();
-                    remaining -= qty * price.value();
-                    if remaining <= Decimal::ZERO {
-                        return true;
-                    }
-                }
+            if self.has_enough_quote_in_queue(queue, price.value(), &mut remaining) {
+                return true;
+            }
+            if remaining < price.value() {
+                return false;
             }
         }
         false
     }
 
-    // 최우선 호가를 반환한다
     fn get_best<'a, K>(
         book: &mut BTreeMap<K, VecDeque<OrderId>>,
         index: &'a HashMap<OrderId, Order>,
@@ -135,7 +117,6 @@ impl OrderBook {
         K: Ord + Copy,
     {
         loop {
-            // 최상위 호가 확인
             let (price, order_id) = {
                 let (price, queue) = book.iter().next()?;
                 (*price, *queue.front()?)
@@ -145,7 +126,6 @@ impl OrderBook {
                 return Some(order);
             }
 
-            // 호가 정리
             let queue = book.get_mut(&price).unwrap();
             queue.pop_front();
             if queue.is_empty() {
@@ -154,7 +134,6 @@ impl OrderBook {
         }
     }
 
-    // 해당 가격대의 queue에서 누적 수량이 required에 도달하는지 확인한다
     fn has_enough_quantity_in_queue(
         &self,
         queue: &VecDeque<OrderId>,
@@ -172,18 +151,22 @@ impl OrderBook {
         false
     }
 
-    /// 해당 가격대의 queue에서 누석 금액이 required에 도달하는지 확인한다
     fn has_enough_quote_in_queue(
         &self,
         queue: &VecDeque<OrderId>,
         price: Decimal,
-        acc: &mut Decimal,
-        required: Decimal,
+        remaining: &mut Decimal,
     ) -> bool {
         for order_id in queue {
             if let Some(order) = self.index.get(order_id) {
-                *acc += order.remaining_qty().value() * price;
-                if *acc >= required {
+                let affordable_qty = (*remaining / price).floor();
+                if affordable_qty.is_zero() {
+                    return false;
+                }
+
+                let fill_qty = order.remaining_qty().value().min(affordable_qty);
+                *remaining -= fill_qty * price;
+                if *remaining <= Decimal::ZERO {
                     return true;
                 }
             }
@@ -227,8 +210,6 @@ mod tests {
     fn limit_sell(price: i64, qty: i64) -> Order {
         make_order(Uuid::new_v4(), price, qty, Side::Sell)
     }
-
-    // ── add ──────────────────────────────────────────────────────────────────
 
     #[test]
     fn add_buy_order_appears_in_best_bid() {
@@ -281,8 +262,6 @@ mod tests {
         assert_eq!(book.best_bid().unwrap().order_id, first_id);
     }
 
-    // ── cancel ───────────────────────────────────────────────────────────────
-
     #[test]
     fn cancel_removes_from_index_best_bid_skips_it() {
         let mut book = OrderBook::new();
@@ -310,10 +289,8 @@ mod tests {
     fn cancel_nonexistent_no_panic() {
         let mut book = OrderBook::new();
         let fake_id = OrderId::new(Uuid::new_v4());
-        book.cancel(&fake_id); // 패닉 없이 통과
+        book.cancel(&fake_id);
     }
-
-    // ── fill ─────────────────────────────────────────────────────────────────
 
     #[test]
     fn partial_fill_remains_in_book() {
@@ -339,10 +316,8 @@ mod tests {
     fn fill_nonexistent_no_effect() {
         let mut book = OrderBook::new();
         let fake_id = OrderId::new(Uuid::new_v4());
-        book.fill(&fake_id, Quantity::new(Decimal::from(5))); // 패닉 없이 통과
+        book.fill(&fake_id, Quantity::new(Decimal::from(5)));
     }
-
-    // ── best_bid / best_ask ───────────────────────────────────────────────────
 
     #[test]
     fn empty_book_best_bid_returns_none() {
@@ -365,8 +340,6 @@ mod tests {
         book.cancel(&id);
         assert!(book.best_bid().is_none());
     }
-
-    // ── can_fully_fill (FOK 지정가) ──────────────────────────────────────────
 
     #[test]
     fn fok_buy_enough_qty_single_order() {
@@ -393,7 +366,7 @@ mod tests {
     #[test]
     fn fok_buy_price_limit_exceeded() {
         let mut book = OrderBook::new();
-        book.add(limit_sell(200, 10)); // 매도가 200 > 매수 한도 100
+        book.add(limit_sell(200, 10));
         assert!(!book.can_fully_fill(Side::Buy, Decimal::from(100), Decimal::from(10)));
     }
 
@@ -407,31 +380,44 @@ mod tests {
     #[test]
     fn fok_sell_price_limit_not_met() {
         let mut book = OrderBook::new();
-        book.add(limit_buy(50, 10)); // 매수가 50 < 매도 한도 100
+        book.add(limit_buy(50, 10));
         assert!(!book.can_fully_fill(Side::Sell, Decimal::from(100), Decimal::from(10)));
     }
-
-    // ── can_fully_fill_quote (FOK 시장가 매수) ───────────────────────────────
 
     #[test]
     fn fok_quote_enough() {
         let mut book = OrderBook::new();
-        book.add(limit_sell(100, 10)); // 금액 = 1000
+        book.add(limit_sell(100, 10));
         assert!(book.can_fully_fill_quote(Decimal::from(1000)));
     }
 
     #[test]
     fn fok_quote_not_enough() {
         let mut book = OrderBook::new();
-        book.add(limit_sell(100, 5)); // 금액 = 500
+        book.add(limit_sell(100, 5));
         assert!(!book.can_fully_fill_quote(Decimal::from(1000)));
     }
 
     #[test]
     fn fok_quote_across_multiple_orders() {
         let mut book = OrderBook::new();
-        book.add(limit_sell(100, 5)); // 500
-        book.add(limit_sell(100, 5)); // 500 → 합계 1000
+        book.add(limit_sell(100, 5));
+        book.add(limit_sell(100, 5));
         assert!(book.can_fully_fill_quote(Decimal::from(1000)));
+    }
+
+    #[test]
+    fn fok_quote_fails_when_single_order_lacks_quantity() {
+        let mut book = OrderBook::new();
+        book.add(limit_sell(100, 5));
+        assert!(!book.can_fully_fill_quote(Decimal::from(1000)));
+    }
+
+    #[test]
+    fn fok_quote_fails_when_remaining_quote_cannot_buy_next_level() {
+        let mut book = OrderBook::new();
+        book.add(limit_sell(100, 5));
+        book.add(limit_sell(200, 10));
+        assert!(!book.can_fully_fill_quote(Decimal::from(550)));
     }
 }

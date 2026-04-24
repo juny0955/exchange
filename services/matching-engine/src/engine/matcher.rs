@@ -131,15 +131,9 @@ impl Matcher {
                 break;
             };
 
-            let max_qty = Quantity::new((remaining_quote.value() / maker.price.value()).floor());
-            if max_qty.value().is_zero() {
+            let Some((fill_qty, fill_quote)) = Self::market_buy_fill(remaining_quote, &maker)
+            else {
                 break;
-            }
-            let (fill_qty, fill_quote) = if maker.remaining_qty <= max_qty {
-                let fq = QuoteQty::new(maker.price.value() * maker.remaining_qty.value());
-                (maker.remaining_qty, fq)
-            } else {
-                (max_qty, remaining_quote)
             };
 
             book.fill(&maker.order_id, fill_qty);
@@ -192,6 +186,21 @@ impl Matcher {
     }
 
     // 단일 체결 실행 - taker/maker 수량 차감 및 Trade 생성
+    fn market_buy_fill(
+        remaining_quote: QuoteQty,
+        maker: &MakerInfo,
+    ) -> Option<(Quantity, QuoteQty)> {
+        let affordable_qty = (remaining_quote.value() / maker.price.value()).floor();
+        if affordable_qty.is_zero() {
+            return None;
+        }
+
+        let fill_qty_value = maker.remaining_qty.value().min(affordable_qty);
+        let fill_qty = Quantity::new(fill_qty_value);
+        let fill_quote = QuoteQty::new(maker.price.value() * fill_qty_value);
+        Some((fill_qty, fill_quote))
+    }
+
     fn execute_fill(taker: &mut Order, maker: MakerInfo, book: &mut OrderBook) -> Trade {
         let fill_qty = maker.remaining_qty.min(taker.remaining_qty());
         let fill_quote = QuoteQty::new(maker.price.value() * fill_qty.value());
@@ -455,6 +464,36 @@ mod tests {
     }
 
     // ── Market Sell ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn market_buy_cancels_when_remaining_quote_cannot_buy_next_level() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 100, 5, TimeInForce::Gtc));
+        book.add(limit_order(Side::Sell, 200, 10, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(market_buy_order(550), &mut book);
+
+        assert!(!events.iter().any(|e| matches!(e, EngineEvent::Matched(_))));
+        assert!(matches!(
+            cancel_reason(&events),
+            Some(CancelReason::FokExpired)
+        ));
+    }
+
+    #[test]
+    fn market_buy_trades_keep_quote_equal_to_price_times_quantity() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 100, 10, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(market_buy_order(500), &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades.len(), 1);
+        assert_eq!(
+            trades[0].quote_qty,
+            QuoteQty::new(trades[0].price.value() * trades[0].quantity.value())
+        );
+    }
 
     #[test]
     fn market_sell_fully_fills() {
