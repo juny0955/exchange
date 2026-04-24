@@ -19,8 +19,25 @@ fn main() {
             EngineEvent::Matched(trades) => {
                 println!("체결: {:?}", trades)
             }
-            EngineEvent::Canceled { order_id, reason } => {
-                println!("취소: order_id={:?}, reason={:?}", order_id, reason)
+            EngineEvent::Canceled {
+                order_id,
+                account_id,
+                reason,
+            } => {
+                println!(
+                    "취소: order_id={:?}, account_id={:?}, reason={:?}",
+                    order_id, account_id, reason
+                )
+            }
+            EngineEvent::Rejected {
+                order_id,
+                account_id,
+                reason,
+            } => {
+                println!(
+                    "거부: order_id={:?}, account_id={:?}, reason={:?}",
+                    order_id, account_id, reason
+                )
             }
         }
     }

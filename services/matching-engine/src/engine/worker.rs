@@ -28,11 +28,12 @@ impl SymbolWorker {
         for command in &self.command_receiver {
             let results = match command {
                 OrderCommand::Place(order) => Matcher::match_order(order, &mut self.order_book),
-                OrderCommand::Cancel { order_id, .. } => {
+                OrderCommand::Cancel { order_id, account_id, .. } => {
                     self.order_book.cancel(&order_id);
 
                     vec![EngineEvent::Canceled {
                         order_id,
+                        account_id,
                         reason: CancelReason::UserRequest,
                     }]
                 }

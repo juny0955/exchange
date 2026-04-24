@@ -2,7 +2,7 @@ use crossbeam::channel;
 use crossbeam::channel::Sender;
 use std::thread;
 
-use crate::engine::{EngineError, OrderCommand};
+use crate::engine::OrderCommand;
 use crate::{
     engine::{
         event::EngineEvent, orderbook::OrderBook, router::EngineRouter, worker::SymbolWorker,
@@ -37,7 +37,15 @@ impl EngineManager {
         self.router.add_worker(symbol, command_tx);
     }
 
-    pub fn submit(&self, command: OrderCommand) -> Result<(), EngineError> {
-        self.router.dispatch(command)
+    pub fn submit(&self, command: OrderCommand) {
+        let order_id = command.order_id();
+        let account_id = command.account_id();
+        if let Err(engine_error) = self.router.dispatch(command) {
+            let _ = self.event_sender.send(EngineEvent::Rejected {
+                order_id,
+                account_id,
+                reason: engine_error,
+            });
+        }
     }
 }

@@ -49,14 +49,14 @@ fn test_limit_buy_sell_fully_matched() {
         50_000_000,
         1,
         TimeInForce::Gtc,
-    ))).unwrap();
+    )));
     manager.submit(OrderCommand::Place(limit_order(
         btc_krw(),
         Side::Buy,
         50_000_000,
         1,
         TimeInForce::Gtc,
-    ))).unwrap();
+    )));
 
     let event = event_rx
         .recv_timeout(Duration::from_millis(200))
@@ -83,7 +83,7 @@ fn test_ioc_no_liquidity_canceled() {
         50_000_000,
         1,
         TimeInForce::Ioc,
-    ))).unwrap();
+    )));
 
     let event = event_rx
         .recv_timeout(Duration::from_millis(200))
@@ -108,7 +108,7 @@ fn test_partial_fill_then_rest_matched() {
         50_000_000,
         1,
         TimeInForce::Gtc,
-    ))).unwrap();
+    )));
     // 매수 qty=2 — 1체결, 나머지 1 book 대기
     manager.submit(OrderCommand::Place(limit_order(
         btc_krw(),
@@ -116,7 +116,7 @@ fn test_partial_fill_then_rest_matched() {
         50_000_000,
         2,
         TimeInForce::Gtc,
-    ))).unwrap();
+    )));
 
     let first = event_rx
         .recv_timeout(Duration::from_millis(200))
@@ -137,7 +137,7 @@ fn test_partial_fill_then_rest_matched() {
         50_000_000,
         1,
         TimeInForce::Gtc,
-    ))).unwrap();
+    )));
 
     let second = event_rx
         .recv_timeout(Duration::from_millis(200))
