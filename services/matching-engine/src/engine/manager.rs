@@ -1,6 +1,6 @@
 use crossbeam::channel;
 use crossbeam::channel::Sender;
-use std::thread;
+use std::thread::{self, JoinHandle};
 
 use crate::engine::OrderCommand;
 use crate::{
@@ -13,6 +13,7 @@ use crate::{
 pub struct EngineManager {
     router: EngineRouter,
     event_sender: Sender<EngineEvent>,
+    worker_handles: Vec<JoinHandle<()>>,
 }
 
 impl EngineManager {
@@ -20,6 +21,7 @@ impl EngineManager {
         Self {
             router: EngineRouter::new(),
             event_sender,
+            worker_handles: Vec::new(),
         }
     }
 
@@ -27,13 +29,14 @@ impl EngineManager {
         let (command_tx, command_rx) = channel::bounded(100_000); // TODO 심볼별 버퍼크기 동적 조절
 
         let worker = SymbolWorker::new(OrderBook::new(), command_rx, self.event_sender.clone());
-        thread::Builder::new()
+        let handle = thread::Builder::new()
             .name(format!("{}-worker", symbol.ticker()))
             .spawn(move || {
                 worker.run();
             })
             .expect("worker 스레드 실행 실패");
 
+        self.worker_handles.push(handle);
         self.router.add_worker(symbol, command_tx);
     }
 
@@ -46,6 +49,12 @@ impl EngineManager {
                 account_id,
                 reason: engine_error,
             });
+        }
+    }
+
+    pub fn shutdown(&mut self) {
+        for handle in self.worker_handles.drain(..) {
+            let _ = handle.join();
         }
     }
 }
