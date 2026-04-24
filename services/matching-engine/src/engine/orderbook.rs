@@ -110,10 +110,17 @@ impl OrderBook {
 
     /// 시장가 매수용 FOK 가능 여부를 체크한다
     pub fn can_fully_fill_quote(&self, required: Decimal) -> bool {
+        let mut remaining = required;
         let mut acc = Decimal::ZERO;
         for (price, queue) in &self.asks {
-            if self.has_enough_quote_in_queue(queue, price.value(), &mut acc, required) {
-                return true;
+            for order_id in queue {
+                if let Some(order) = self.index.get(order_id) {
+                    let qty = (remaining / price.value()).floor();
+                    remaining -= qty * price.value();
+                    if remaining <= Decimal::ZERO {
+                        return true;
+                    }
+                }
             }
         }
         false
