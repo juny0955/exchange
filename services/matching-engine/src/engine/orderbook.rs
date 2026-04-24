@@ -345,7 +345,11 @@ mod tests {
     fn fok_buy_enough_qty_single_order() {
         let mut book = OrderBook::new();
         book.add(limit_sell(100, 10));
-        assert!(book.can_fully_fill(Side::Buy, Price::new(Decimal::from(100)), Quantity::new(Decimal::from(10))));
+        assert!(book.can_fully_fill(
+            Side::Buy,
+            Price::new(Decimal::from(100)),
+            Quantity::new(Decimal::from(10))
+        ));
     }
 
     #[test]
@@ -353,35 +357,55 @@ mod tests {
         let mut book = OrderBook::new();
         book.add(limit_sell(100, 5));
         book.add(limit_sell(100, 5));
-        assert!(book.can_fully_fill(Side::Buy, Price::new(Decimal::from(100)), Quantity::new(Decimal::from(10))));
+        assert!(book.can_fully_fill(
+            Side::Buy,
+            Price::new(Decimal::from(100)),
+            Quantity::new(Decimal::from(10))
+        ));
     }
 
     #[test]
     fn fok_buy_not_enough_qty() {
         let mut book = OrderBook::new();
         book.add(limit_sell(100, 3));
-        assert!(!book.can_fully_fill(Side::Buy, Price::new(Decimal::from(100)), Quantity::new(Decimal::from(100))));
+        assert!(!book.can_fully_fill(
+            Side::Buy,
+            Price::new(Decimal::from(100)),
+            Quantity::new(Decimal::from(100))
+        ));
     }
 
     #[test]
     fn fok_buy_price_limit_exceeded() {
         let mut book = OrderBook::new();
         book.add(limit_sell(200, 10));
-        assert!(!book.can_fully_fill(Side::Buy, Price::new(Decimal::from(100)), Quantity::new(Decimal::from(100))));
+        assert!(!book.can_fully_fill(
+            Side::Buy,
+            Price::new(Decimal::from(100)),
+            Quantity::new(Decimal::from(100))
+        ));
     }
 
     #[test]
     fn fok_sell_enough_qty() {
         let mut book = OrderBook::new();
         book.add(limit_buy(100, 10));
-        assert!(book.can_fully_fill(Side::Sell, Price::new(Decimal::from(100)), Quantity::new(Decimal::from(10))));
+        assert!(book.can_fully_fill(
+            Side::Sell,
+            Price::new(Decimal::from(100)),
+            Quantity::new(Decimal::from(10))
+        ));
     }
 
     #[test]
     fn fok_sell_price_limit_not_met() {
         let mut book = OrderBook::new();
         book.add(limit_buy(50, 10));
-        assert!(!book.can_fully_fill(Side::Sell, Price::new(Decimal::from(100)), Quantity::new(Decimal::from(100))));
+        assert!(!book.can_fully_fill(
+            Side::Sell,
+            Price::new(Decimal::from(100)),
+            Quantity::new(Decimal::from(100))
+        ));
     }
 
     #[test]

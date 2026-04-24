@@ -13,7 +13,7 @@ pub enum EngineEvent {
         order_id: OrderId,
         account_id: AccountId,
         reason: EngineError,
-    }
+    },
 }
 
 #[derive(Debug)]

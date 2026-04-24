@@ -490,10 +490,7 @@ mod tests {
 
         let trades = matched_trades(events);
         assert_eq!(trades.len(), 1);
-        assert_eq!(
-            trades[0].quote_qty,
-            trades[0].price * trades[0].quantity,
-        );
+        assert_eq!(trades[0].quote_qty, trades[0].price * trades[0].quantity,);
     }
 
     #[test]

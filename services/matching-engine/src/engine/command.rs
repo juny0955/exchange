@@ -2,7 +2,11 @@ use crate::models::{AccountId, Order, OrderId, Symbol};
 
 pub enum OrderCommand {
     Place(Order),
-    Cancel { symbol: Symbol, order_id: OrderId, account_id: AccountId },
+    Cancel {
+        symbol: Symbol,
+        order_id: OrderId,
+        account_id: AccountId,
+    },
 }
 
 impl OrderCommand {
