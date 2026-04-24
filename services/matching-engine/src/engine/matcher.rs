@@ -180,8 +180,8 @@ impl Matcher {
             OrderKind::Limit {
                 price: taker_price, ..
             } => match taker.side {
-                Side::Buy => taker_price.value() >= maker_price.value(),
-                Side::Sell => taker_price.value() <= maker_price.value(),
+                Side::Buy => taker_price >= maker_price,
+                Side::Sell => taker_price <= maker_price,
             },
             _ => true,
         }
@@ -192,20 +192,19 @@ impl Matcher {
         remaining_quote: QuoteQty,
         maker: &MakerInfo,
     ) -> Option<(Quantity, QuoteQty)> {
-        let affordable_qty = (remaining_quote.value() / maker.price.value()).floor();
+        let affordable_qty = (remaining_quote / maker.price).floor();
         if affordable_qty.is_zero() {
             return None;
         }
 
-        let fill_qty_value = maker.remaining_qty.value().min(affordable_qty);
-        let fill_qty = Quantity::new(fill_qty_value);
-        let fill_quote = QuoteQty::new(maker.price.value() * fill_qty_value);
+        let fill_qty = maker.remaining_qty.min(affordable_qty);
+        let fill_quote = maker.price * fill_qty;
         Some((fill_qty, fill_quote))
     }
 
     fn execute_fill(taker: &mut Order, maker: MakerInfo, book: &mut OrderBook) -> Trade {
         let fill_qty = maker.remaining_qty.min(taker.remaining_qty());
-        let fill_quote = QuoteQty::new(maker.price.value() * fill_qty.value());
+        let fill_quote = maker.price * fill_qty;
 
         book.fill(&maker.order_id, fill_qty);
         taker.fill(fill_qty, fill_quote);
@@ -493,7 +492,7 @@ mod tests {
         assert_eq!(trades.len(), 1);
         assert_eq!(
             trades[0].quote_qty,
-            QuoteQty::new(trades[0].price.value() * trades[0].quantity.value())
+            trades[0].price * trades[0].quantity,
         );
     }
 
