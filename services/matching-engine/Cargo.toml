@@ -9,3 +9,4 @@ uuid = { version = "1.23.1", features = ["v4", "v7", "serde"] }
 rust_decimal = "1.41.0"
 thiserror = "2.0.18"
 crossbeam = "0.8.4"
+derive_more = "2.1.1"

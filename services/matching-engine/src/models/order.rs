@@ -17,15 +17,15 @@ pub struct Order {
 
 impl Order {
     pub fn fill(&mut self, fill_qty: Quantity, fill_quote: QuoteQty) {
-        self.filled_qty = self.filled_qty.add(fill_qty);
-        self.filled_quote_qty = self.filled_quote_qty.add(fill_quote);
+        self.filled_qty += fill_qty;
+        self.filled_quote_qty += fill_quote;
     }
 
     /// Limit / MarketSell 전용
     pub fn remaining_qty(&self) -> Quantity {
         match self.kind {
             OrderKind::Limit { quantity, .. } | OrderKind::MarketSell { quantity } => {
-                quantity.sub(self.filled_qty)
+                quantity - self.filled_qty
             }
             OrderKind::MarketBuy { .. } => unreachable!("시장가 매수 주문은 수량이 없습니다."),
         }

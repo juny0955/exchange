@@ -1,3 +1,5 @@
+use std::ops::{Add, AddAssign, Sub};
+
 use crate::models::Side::{Buy, Sell};
 use rust_decimal::Decimal;
 use uuid::Uuid;
@@ -88,7 +90,7 @@ impl Price {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Add, AddAssign, Sub)]
 pub struct Quantity(Decimal);
 impl Quantity {
     pub fn new(val: Decimal) -> Self {
@@ -102,17 +104,9 @@ impl Quantity {
     pub fn value(&self) -> Decimal {
         self.0
     }
-
-    pub fn sub(&self, val: Quantity) -> Quantity {
-        Quantity::new(self.0 - val.value())
-    }
-
-    pub fn add(&self, val: Quantity) -> Quantity {
-        Quantity::new(self.0 + val.value())
-    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Add, AddAssign, Sub)]
 pub struct QuoteQty(Decimal);
 impl QuoteQty {
     pub fn new(val: Decimal) -> Self {
@@ -125,13 +119,5 @@ impl QuoteQty {
 
     pub fn value(&self) -> Decimal {
         self.0
-    }
-
-    pub fn sub(&self, val: QuoteQty) -> QuoteQty {
-        QuoteQty::new(self.0 - val.value())
-    }
-
-    pub fn add(&self, val: QuoteQty) -> QuoteQty {
-        QuoteQty::new(self.0 + val.value())
     }
 }
