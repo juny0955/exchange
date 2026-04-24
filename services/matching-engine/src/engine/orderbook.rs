@@ -211,6 +211,7 @@ mod tests {
         make_order(Uuid::new_v4(), price, qty, Side::Sell)
     }
 
+    // 매수 주문은 최우선 매수 호가에 등록된다
     #[test]
     fn add_buy_order_appears_in_best_bid() {
         let mut book = OrderBook::new();
@@ -220,6 +221,7 @@ mod tests {
         assert_eq!(book.best_bid().unwrap().order_id, id);
     }
 
+    // 매도 주문은 최우선 매도 호가에 등록된다
     #[test]
     fn add_sell_order_appears_in_best_ask() {
         let mut book = OrderBook::new();
@@ -229,6 +231,7 @@ mod tests {
         assert_eq!(book.best_ask().unwrap().order_id, id);
     }
 
+    // 더 높은 매수 가격이 우선된다
     #[test]
     fn add_multiple_bids_returns_highest_price() {
         let mut book = OrderBook::new();
@@ -240,6 +243,7 @@ mod tests {
         assert_eq!(book.best_bid().unwrap().order_id, high_id);
     }
 
+    // 더 낮은 매도 가격이 우선된다
     #[test]
     fn add_multiple_asks_returns_lowest_price() {
         let mut book = OrderBook::new();
@@ -251,6 +255,7 @@ mod tests {
         assert_eq!(book.best_ask().unwrap().order_id, low_id);
     }
 
+    // 동일 매수 가격은 FIFO를 유지한다
     #[test]
     fn add_same_price_fifo_order() {
         let mut book = OrderBook::new();
@@ -262,6 +267,7 @@ mod tests {
         assert_eq!(book.best_bid().unwrap().order_id, first_id);
     }
 
+    // 취소된 매수 주문은 조회에서 제외된다
     #[test]
     fn cancel_removes_from_index_best_bid_skips_it() {
         let mut book = OrderBook::new();
@@ -272,6 +278,7 @@ mod tests {
         assert!(book.best_bid().is_none());
     }
 
+    // 같은 가격대 다음 주문이 최우선이 된다
     #[test]
     fn cancel_then_next_order_returned() {
         let mut book = OrderBook::new();
@@ -285,6 +292,7 @@ mod tests {
         assert_eq!(book.best_bid().unwrap().order_id, second_id);
     }
 
+    // 없는 주문 취소는 실패하지 않는다
     #[test]
     fn cancel_nonexistent_no_panic() {
         let mut book = OrderBook::new();
@@ -292,6 +300,7 @@ mod tests {
         book.cancel(&fake_id);
     }
 
+    // 부분 체결된 주문은 호가에 남는다
     #[test]
     fn partial_fill_remains_in_book() {
         let mut book = OrderBook::new();
@@ -302,6 +311,7 @@ mod tests {
         assert_eq!(book.best_bid().unwrap().order_id, id);
     }
 
+    // 전량 체결된 주문은 호가에서 제거된다
     #[test]
     fn full_fill_removes_from_book() {
         let mut book = OrderBook::new();
@@ -312,6 +322,7 @@ mod tests {
         assert!(book.best_bid().is_none());
     }
 
+    // 없는 주문 체결은 영향이 없다
     #[test]
     fn fill_nonexistent_no_effect() {
         let mut book = OrderBook::new();
@@ -319,18 +330,21 @@ mod tests {
         book.fill(&fake_id, Quantity::new(Decimal::from(5)));
     }
 
+    // 빈 호가창은 매수 호가가 없다
     #[test]
     fn empty_book_best_bid_returns_none() {
         let mut book = OrderBook::new();
         assert!(book.best_bid().is_none());
     }
 
+    // 빈 호가창은 매도 호가가 없다
     #[test]
     fn empty_book_best_ask_returns_none() {
         let mut book = OrderBook::new();
         assert!(book.best_ask().is_none());
     }
 
+    // 모든 주문 취소 후 매수 호가가 비워진다
     #[test]
     fn after_all_canceled_best_bid_returns_none() {
         let mut book = OrderBook::new();
@@ -341,6 +355,7 @@ mod tests {
         assert!(book.best_bid().is_none());
     }
 
+    // 단일 매도 주문으로 전량 체결 가능하다
     #[test]
     fn fok_buy_enough_qty_single_order() {
         let mut book = OrderBook::new();
@@ -352,6 +367,7 @@ mod tests {
         ));
     }
 
+    // 여러 매도 주문으로 전량 체결 가능하다
     #[test]
     fn fok_buy_enough_qty_multiple_orders() {
         let mut book = OrderBook::new();
@@ -364,6 +380,7 @@ mod tests {
         ));
     }
 
+    // 매도 수량이 부족하면 전량 체결할 수 없다
     #[test]
     fn fok_buy_not_enough_qty() {
         let mut book = OrderBook::new();
@@ -375,6 +392,7 @@ mod tests {
         ));
     }
 
+    // 상한 가격을 넘는 매도 호가는 제외된다
     #[test]
     fn fok_buy_price_limit_exceeded() {
         let mut book = OrderBook::new();
@@ -386,6 +404,7 @@ mod tests {
         ));
     }
 
+    // 단일 매수 주문으로 전량 체결 가능하다
     #[test]
     fn fok_sell_enough_qty() {
         let mut book = OrderBook::new();
@@ -397,6 +416,7 @@ mod tests {
         ));
     }
 
+    // 하한 가격 미달 매수 호가는 제외된다
     #[test]
     fn fok_sell_price_limit_not_met() {
         let mut book = OrderBook::new();
@@ -408,6 +428,7 @@ mod tests {
         ));
     }
 
+    // 주문 금액으로 전량 매수할 수 있다
     #[test]
     fn fok_quote_enough() {
         let mut book = OrderBook::new();
@@ -415,6 +436,7 @@ mod tests {
         assert!(book.can_fully_fill_quote(QuoteQty::new(Decimal::from(1000))));
     }
 
+    // 주문 금액이 부족하면 전량 매수할 수 없다
     #[test]
     fn fok_quote_not_enough() {
         let mut book = OrderBook::new();
@@ -422,6 +444,7 @@ mod tests {
         assert!(!book.can_fully_fill_quote(QuoteQty::new(Decimal::from(1000))));
     }
 
+    // 여러 매도 주문으로 전량 매수할 수 있다
     #[test]
     fn fok_quote_across_multiple_orders() {
         let mut book = OrderBook::new();
@@ -430,6 +453,7 @@ mod tests {
         assert!(book.can_fully_fill_quote(QuoteQty::new(Decimal::from(1000))));
     }
 
+    // 단일 매도 주문 수량 부족시 실패한다
     #[test]
     fn fok_quote_fails_when_single_order_lacks_quantity() {
         let mut book = OrderBook::new();
@@ -437,6 +461,7 @@ mod tests {
         assert!(!book.can_fully_fill_quote(QuoteQty::new(Decimal::from(1000))));
     }
 
+    // 남은 금액으로 다음 호가를 못 사면 실패한다
     #[test]
     fn fok_quote_fails_when_remaining_quote_cannot_buy_next_level() {
         let mut book = OrderBook::new();

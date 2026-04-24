@@ -316,6 +316,7 @@ mod tests {
 
     // ── GTC ──────────────────────────────────────────────────────────────────
 
+    // 동일가 매수 주문이 전량 체결된다
     #[test]
     fn gtc_buy_fully_matches_resting_ask() {
         let mut book = OrderBook::new();
@@ -331,6 +332,7 @@ mod tests {
         assert!(book.best_ask().is_none());
     }
 
+    // 매수 잔량이 호가에 남는다
     #[test]
     fn gtc_buy_partial_fill_rests_remainder_in_book() {
         let mut book = OrderBook::new();
@@ -345,6 +347,22 @@ mod tests {
         assert!(book.best_ask().is_none());
     }
 
+    // 매도 잔량이 호가에 남는다
+    #[test]
+    fn gtc_sell_partial_fill_rests_remainder_in_book() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Buy, 100, 3, TimeInForce::Gtc));
+
+        let events =
+            Matcher::match_order(limit_order(Side::Sell, 100, 5, TimeInForce::Gtc), &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades[0].quantity, Quantity::new(Decimal::from(3)));
+        assert!(book.best_ask().is_some());
+        assert!(book.best_bid().is_none());
+    }
+
+    // 가격이 안 맞으면 매수 주문이 대기한다
     #[test]
     fn gtc_buy_price_miss_rests_in_book_no_trade() {
         let mut book = OrderBook::new();
@@ -359,6 +377,7 @@ mod tests {
 
     // ── IOC ──────────────────────────────────────────────────────────────────
 
+    // IOC 매수 주문이 전량 체결된다
     #[test]
     fn ioc_buy_fully_matches() {
         let mut book = OrderBook::new();
@@ -370,6 +389,7 @@ mod tests {
         assert_eq!(matched_trades(events).len(), 1);
     }
 
+    // IOC 매수 잔량은 즉시 취소된다
     #[test]
     fn ioc_buy_partial_fill_cancels_remainder() {
         let mut book = OrderBook::new();
@@ -386,6 +406,24 @@ mod tests {
         assert!(book.best_bid().is_none());
     }
 
+    // IOC 매도 잔량은 즉시 취소된다
+    #[test]
+    fn ioc_sell_partial_fill_cancels_remainder() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Buy, 100, 3, TimeInForce::Gtc));
+
+        let events =
+            Matcher::match_order(limit_order(Side::Sell, 100, 5, TimeInForce::Ioc), &mut book);
+
+        assert!(events.iter().any(|e| matches!(e, EngineEvent::Matched(_))));
+        assert!(matches!(
+            cancel_reason(&events),
+            Some(CancelReason::IocExpired)
+        ));
+        assert!(book.best_ask().is_none());
+    }
+
+    // IOC 매수 주문은 미체결시 취소된다
     #[test]
     fn ioc_buy_no_match_immediately_canceled() {
         let mut book = OrderBook::new();
@@ -403,6 +441,7 @@ mod tests {
 
     // ── Limit FOK ────────────────────────────────────────────────────────────
 
+    // FOK 매수 주문이 전량 체결된다
     #[test]
     fn limit_fok_buy_fully_fills() {
         let mut book = OrderBook::new();
@@ -416,6 +455,7 @@ mod tests {
         assert_eq!(trades[0].quantity, Quantity::new(Decimal::from(5)));
     }
 
+    // FOK 매수 주문은 수량 부족시 취소된다
     #[test]
     fn limit_fok_buy_insufficient_qty_canceled() {
         let mut book = OrderBook::new();
@@ -430,6 +470,7 @@ mod tests {
         ));
     }
 
+    // FOK 매수 주문은 가격 불일치시 취소된다
     #[test]
     fn limit_fok_buy_price_out_of_range_canceled() {
         let mut book = OrderBook::new();
@@ -444,8 +485,79 @@ mod tests {
         ));
     }
 
+    // FOK 매도 주문은 가격 불일치시 취소된다
+    #[test]
+    fn limit_fok_sell_price_out_of_range_canceled() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Buy, 90, 5, TimeInForce::Gtc));
+
+        let events =
+            Matcher::match_order(limit_order(Side::Sell, 100, 5, TimeInForce::Fok), &mut book);
+
+        assert!(matches!(
+            cancel_reason(&events),
+            Some(CancelReason::FokExpired)
+        ));
+    }
+
+    // 공격 매수는 매도 호가 가격으로 체결된다
+    #[test]
+    fn aggressive_buy_trades_at_resting_ask_price() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 100, 5, TimeInForce::Gtc));
+
+        let events =
+            Matcher::match_order(limit_order(Side::Buy, 110, 5, TimeInForce::Gtc), &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades.len(), 1);
+        assert_eq!(trades[0].price, Price::new(Decimal::from(100)));
+    }
+
+    // 더 좋은 매도 가격부터 체결된다
+    #[test]
+    fn matching_prefers_better_price_levels_before_worse_ones() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 90, 2, TimeInForce::Gtc));
+        book.add(limit_order(Side::Sell, 100, 2, TimeInForce::Gtc));
+
+        let events =
+            Matcher::match_order(limit_order(Side::Buy, 100, 3, TimeInForce::Gtc), &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades.len(), 2);
+        assert_eq!(trades[0].price, Price::new(Decimal::from(90)));
+        assert_eq!(trades[0].quantity, Quantity::new(Decimal::from(2)));
+        assert_eq!(trades[1].price, Price::new(Decimal::from(100)));
+        assert_eq!(trades[1].quantity, Quantity::new(Decimal::from(1)));
+    }
+
+    // 동일 가격 주문은 FIFO로 체결된다
+    #[test]
+    fn matching_preserves_fifo_within_same_price_level() {
+        let mut book = OrderBook::new();
+        let first_maker = limit_order(Side::Sell, 100, 2, TimeInForce::Gtc);
+        let first_maker_id = first_maker.order_id;
+        let second_maker = limit_order(Side::Sell, 100, 3, TimeInForce::Gtc);
+        let second_maker_id = second_maker.order_id;
+        book.add(first_maker);
+        book.add(second_maker);
+
+        let events =
+            Matcher::match_order(limit_order(Side::Buy, 100, 4, TimeInForce::Gtc), &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades.len(), 2);
+        assert_eq!(trades[0].sell_order_id, first_maker_id);
+        assert_eq!(trades[0].quantity, Quantity::new(Decimal::from(2)));
+        assert_eq!(trades[1].sell_order_id, second_maker_id);
+        assert_eq!(trades[1].quantity, Quantity::new(Decimal::from(2)));
+        assert_eq!(book.best_ask().unwrap().order_id, second_maker_id);
+    }
+
     // ── Market Buy ───────────────────────────────────────────────────────────
 
+    // 시장가 매수는 주문 금액만큼 체결된다
     #[test]
     fn market_buy_fills_with_quote_amount() {
         let mut book = OrderBook::new();
@@ -459,6 +571,7 @@ mod tests {
         assert_eq!(trades[0].quantity, Quantity::new(Decimal::from(5)));
     }
 
+    // 시장가 매수는 유동성 부족시 취소된다
     #[test]
     fn market_buy_insufficient_quote_canceled() {
         let mut book = OrderBook::new();
@@ -474,6 +587,7 @@ mod tests {
 
     // ── Market Sell ──────────────────────────────────────────────────────────
 
+    // 잔여 금액이 다음 호가를 못 사면 취소된다
     #[test]
     fn market_buy_cancels_when_remaining_quote_cannot_buy_next_level() {
         let mut book = OrderBook::new();
@@ -489,6 +603,7 @@ mod tests {
         ));
     }
 
+    // 체결 대금은 가격과 수량의 곱과 같다
     #[test]
     fn market_buy_trades_keep_quote_equal_to_price_times_quantity() {
         let mut book = OrderBook::new();
@@ -501,6 +616,26 @@ mod tests {
         assert_eq!(trades[0].quote_qty, trades[0].price * trades[0].quantity,);
     }
 
+    // 시장가 매수는 여러 호가로 나뉘어 체결된다
+    #[test]
+    fn market_buy_splits_trades_across_multiple_price_levels() {
+        let mut book = OrderBook::new();
+        book.add(limit_order(Side::Sell, 100, 5, TimeInForce::Gtc));
+        book.add(limit_order(Side::Sell, 200, 5, TimeInForce::Gtc));
+
+        let events = Matcher::match_order(market_buy_order(700), &mut book);
+
+        let trades = matched_trades(events);
+        assert_eq!(trades.len(), 2);
+        assert_eq!(trades[0].price, Price::new(Decimal::from(100)));
+        assert_eq!(trades[0].quantity, Quantity::new(Decimal::from(5)));
+        assert_eq!(trades[0].quote_qty, QuoteQty::new(Decimal::from(500)));
+        assert_eq!(trades[1].price, Price::new(Decimal::from(200)));
+        assert_eq!(trades[1].quantity, Quantity::new(Decimal::from(1)));
+        assert_eq!(trades[1].quote_qty, QuoteQty::new(Decimal::from(200)));
+    }
+
+    // 시장가 매도는 전량 체결된다
     #[test]
     fn market_sell_fully_fills() {
         let mut book = OrderBook::new();
@@ -514,6 +649,7 @@ mod tests {
         assert_eq!(trades[0].price, Price::new(Decimal::from(100)));
     }
 
+    // 시장가 매도는 유동성 부족시 취소된다
     #[test]
     fn market_sell_insufficient_qty_canceled() {
         let mut book = OrderBook::new();
@@ -529,6 +665,7 @@ mod tests {
 
     // ── Trade 계정 매핑 ──────────────────────────────────────────────────────
 
+    // 매수 taker는 매수 계정으로 기록된다
     #[test]
     fn buy_taker_is_assigned_as_buyer_in_trade() {
         let mut book = OrderBook::new();
@@ -545,6 +682,7 @@ mod tests {
         assert_eq!(trades[0].sell_account_id, maker_account);
     }
 
+    // 매도 taker는 매도 계정으로 기록된다
     #[test]
     fn sell_taker_is_assigned_as_seller_in_trade() {
         let mut book = OrderBook::new();
