@@ -1,7 +1,7 @@
-use std::ops::{Add, AddAssign, Sub};
-
 use crate::models::Side::{Buy, Sell};
+use derive_more::{Add, AddAssign, Div, Sub, SubAssign};
 use rust_decimal::Decimal;
+use std::ops::{Div, Mul};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy)]
@@ -85,12 +85,22 @@ impl Price {
         Self(val)
     }
 
+    pub fn zero() -> Self {
+        Self(Decimal::ZERO)
+    }
+
     pub fn value(&self) -> Decimal {
         self.0
     }
 }
+impl Mul<Quantity> for Price {
+    type Output = QuoteQty;
+    fn mul(self, other: Quantity) -> Self::Output {
+        QuoteQty(self.0 * other.0)
+    }
+}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Add, AddAssign, Sub)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Add, AddAssign, Sub, SubAssign)]
 pub struct Quantity(Decimal);
 impl Quantity {
     pub fn new(val: Decimal) -> Self {
@@ -104,9 +114,25 @@ impl Quantity {
     pub fn value(&self) -> Decimal {
         self.0
     }
+
+    pub fn floor(self) -> Self {
+        Self(self.0.floor())
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.0.is_zero()
+    }
+}
+impl Mul<Price> for Quantity {
+    type Output = QuoteQty;
+    fn mul(self, other: Price) -> Self::Output {
+        QuoteQty(self.0 * other.0)
+    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Add, AddAssign, Sub)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Add, AddAssign, Sub, SubAssign, Div,
+)]
 pub struct QuoteQty(Decimal);
 impl QuoteQty {
     pub fn new(val: Decimal) -> Self {
@@ -119,5 +145,11 @@ impl QuoteQty {
 
     pub fn value(&self) -> Decimal {
         self.0
+    }
+}
+impl Div<Price> for QuoteQty {
+    type Output = Quantity;
+    fn div(self, other: Price) -> Self::Output {
+        Quantity(self.0 / other.0)
     }
 }

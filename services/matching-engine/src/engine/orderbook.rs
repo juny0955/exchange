@@ -69,12 +69,12 @@ impl OrderBook {
         }
     }
 
-    pub fn can_fully_fill(&self, side: Side, price_limit: Decimal, required: Decimal) -> bool {
-        let mut acc = Decimal::ZERO;
+    pub fn can_fully_fill(&self, side: Side, price_limit: Price, required: Quantity) -> bool {
+        let mut acc = Quantity::zero();
         match side {
             Side::Buy => {
                 for (price, queue) in &self.asks {
-                    if price.value() > price_limit {
+                    if *price > price_limit {
                         break;
                     }
                     if self.has_enough_quantity_in_queue(queue, &mut acc, required) {
@@ -84,7 +84,7 @@ impl OrderBook {
             }
             Side::Sell => {
                 for (price, queue) in &self.bids {
-                    if price.0.value() < price_limit {
+                    if price.0 < price_limit {
                         break;
                     }
                     if self.has_enough_quantity_in_queue(queue, &mut acc, required) {
@@ -96,13 +96,13 @@ impl OrderBook {
         false
     }
 
-    pub fn can_fully_fill_quote(&self, required: Decimal) -> bool {
+    pub fn can_fully_fill_quote(&self, required: QuoteQty) -> bool {
         let mut remaining = required;
         for (price, queue) in &self.asks {
-            if self.has_enough_quote_in_queue(queue, price.value(), &mut remaining) {
+            if self.has_enough_quote_in_queue(queue, *price, &mut remaining) {
                 return true;
             }
-            if remaining < price.value() {
+            if remaining.value() < price.value() {
                 return false;
             }
         }
@@ -137,12 +137,12 @@ impl OrderBook {
     fn has_enough_quantity_in_queue(
         &self,
         queue: &VecDeque<OrderId>,
-        acc: &mut Decimal,
-        required: Decimal,
+        acc: &mut Quantity,
+        required: Quantity,
     ) -> bool {
         for order_id in queue {
             if let Some(order) = self.index.get(order_id) {
-                *acc += order.remaining_qty().value();
+                *acc += order.remaining_qty();
                 if *acc >= required {
                     return true;
                 }
@@ -154,8 +154,8 @@ impl OrderBook {
     fn has_enough_quote_in_queue(
         &self,
         queue: &VecDeque<OrderId>,
-        price: Decimal,
-        remaining: &mut Decimal,
+        price: Price,
+        remaining: &mut QuoteQty,
     ) -> bool {
         for order_id in queue {
             if let Some(order) = self.index.get(order_id) {
@@ -164,9 +164,9 @@ impl OrderBook {
                     return false;
                 }
 
-                let fill_qty = order.remaining_qty().value().min(affordable_qty);
+                let fill_qty = order.remaining_qty().min(affordable_qty);
                 *remaining -= fill_qty * price;
-                if *remaining <= Decimal::ZERO {
+                if remaining.value() <= Decimal::ZERO {
                     return true;
                 }
             }
@@ -345,7 +345,7 @@ mod tests {
     fn fok_buy_enough_qty_single_order() {
         let mut book = OrderBook::new();
         book.add(limit_sell(100, 10));
-        assert!(book.can_fully_fill(Side::Buy, Decimal::from(100), Decimal::from(10)));
+        assert!(book.can_fully_fill(Side::Buy, Price::new(Decimal::from(100)), Quantity::new(Decimal::from(10))));
     }
 
     #[test]
@@ -353,49 +353,49 @@ mod tests {
         let mut book = OrderBook::new();
         book.add(limit_sell(100, 5));
         book.add(limit_sell(100, 5));
-        assert!(book.can_fully_fill(Side::Buy, Decimal::from(100), Decimal::from(10)));
+        assert!(book.can_fully_fill(Side::Buy, Price::new(Decimal::from(100)), Quantity::new(Decimal::from(10))));
     }
 
     #[test]
     fn fok_buy_not_enough_qty() {
         let mut book = OrderBook::new();
         book.add(limit_sell(100, 3));
-        assert!(!book.can_fully_fill(Side::Buy, Decimal::from(100), Decimal::from(10)));
+        assert!(!book.can_fully_fill(Side::Buy, Price::new(Decimal::from(100)), Quantity::new(Decimal::from(100))));
     }
 
     #[test]
     fn fok_buy_price_limit_exceeded() {
         let mut book = OrderBook::new();
         book.add(limit_sell(200, 10));
-        assert!(!book.can_fully_fill(Side::Buy, Decimal::from(100), Decimal::from(10)));
+        assert!(!book.can_fully_fill(Side::Buy, Price::new(Decimal::from(100)), Quantity::new(Decimal::from(100))));
     }
 
     #[test]
     fn fok_sell_enough_qty() {
         let mut book = OrderBook::new();
         book.add(limit_buy(100, 10));
-        assert!(book.can_fully_fill(Side::Sell, Decimal::from(100), Decimal::from(10)));
+        assert!(book.can_fully_fill(Side::Sell, Price::new(Decimal::from(100)), Quantity::new(Decimal::from(10))));
     }
 
     #[test]
     fn fok_sell_price_limit_not_met() {
         let mut book = OrderBook::new();
         book.add(limit_buy(50, 10));
-        assert!(!book.can_fully_fill(Side::Sell, Decimal::from(100), Decimal::from(10)));
+        assert!(!book.can_fully_fill(Side::Sell, Price::new(Decimal::from(100)), Quantity::new(Decimal::from(100))));
     }
 
     #[test]
     fn fok_quote_enough() {
         let mut book = OrderBook::new();
         book.add(limit_sell(100, 10));
-        assert!(book.can_fully_fill_quote(Decimal::from(1000)));
+        assert!(book.can_fully_fill_quote(QuoteQty::new(Decimal::from(1000))));
     }
 
     #[test]
     fn fok_quote_not_enough() {
         let mut book = OrderBook::new();
         book.add(limit_sell(100, 5));
-        assert!(!book.can_fully_fill_quote(Decimal::from(1000)));
+        assert!(!book.can_fully_fill_quote(QuoteQty::new(Decimal::from(1000))));
     }
 
     #[test]
@@ -403,14 +403,14 @@ mod tests {
         let mut book = OrderBook::new();
         book.add(limit_sell(100, 5));
         book.add(limit_sell(100, 5));
-        assert!(book.can_fully_fill_quote(Decimal::from(1000)));
+        assert!(book.can_fully_fill_quote(QuoteQty::new(Decimal::from(1000))));
     }
 
     #[test]
     fn fok_quote_fails_when_single_order_lacks_quantity() {
         let mut book = OrderBook::new();
         book.add(limit_sell(100, 5));
-        assert!(!book.can_fully_fill_quote(Decimal::from(1000)));
+        assert!(!book.can_fully_fill_quote(QuoteQty::new(Decimal::from(1000))));
     }
 
     #[test]
@@ -418,6 +418,6 @@ mod tests {
         let mut book = OrderBook::new();
         book.add(limit_sell(100, 5));
         book.add(limit_sell(200, 10));
-        assert!(!book.can_fully_fill_quote(Decimal::from(550)));
+        assert!(!book.can_fully_fill_quote(QuoteQty::new(Decimal::from(1000))));
     }
 }

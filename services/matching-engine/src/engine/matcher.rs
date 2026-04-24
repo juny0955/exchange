@@ -1,5 +1,3 @@
-use rust_decimal::Decimal;
-
 use crate::engine::event::{CancelReason, EngineEvent};
 use crate::engine::orderbook::OrderBook;
 use crate::models::{
@@ -96,7 +94,7 @@ impl Matcher {
             _ => unreachable!("지정가 FOK 주문 전용"),
         };
 
-        if !book.can_fully_fill(order.side, price.value(), required.value()) {
+        if !book.can_fully_fill(order.side, price, required) {
             return vec![EngineEvent::Canceled {
                 order_id: order.order_id,
                 reason: CancelReason::FokExpired,
@@ -115,7 +113,7 @@ impl Matcher {
             _ => unreachable!("시장가 매수 전용"),
         };
 
-        if !book.can_fully_fill_quote(required_quote.value()) {
+        if !book.can_fully_fill_quote(required_quote) {
             return vec![EngineEvent::Canceled {
                 order_id: order.order_id,
                 reason: CancelReason::FokExpired,
@@ -138,7 +136,7 @@ impl Matcher {
 
             book.fill(&maker.order_id, fill_qty);
             taker.fill(fill_qty, fill_quote);
-            remaining_quote = remaining_quote.sub(fill_quote);
+            remaining_quote -= fill_quote;
 
             trades.push(Self::make_trade(&taker, maker, fill_qty, fill_quote));
         }
@@ -153,7 +151,7 @@ impl Matcher {
             _ => unreachable!("시장가 매도 전용"),
         };
 
-        if !book.can_fully_fill(order.side, Decimal::ZERO, required.value()) {
+        if !book.can_fully_fill(order.side, Price::zero(), required) {
             return vec![EngineEvent::Canceled {
                 order_id: order.order_id,
                 reason: CancelReason::FokExpired,
