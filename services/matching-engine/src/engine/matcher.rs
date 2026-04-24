@@ -1,3 +1,4 @@
+use crate::engine::EngineError;
 use crate::engine::event::{CancelReason, EngineEvent};
 use crate::engine::orderbook::OrderBook;
 use crate::models::{
@@ -12,18 +13,18 @@ struct MakerInfo {
     remaining_qty: Quantity,
 }
 impl MakerInfo {
-    fn new(order: &Order) -> Self {
+    fn new(order: &Order) -> Option<Self> {
         let price = match &order.kind {
             OrderKind::Limit { price, .. } => *price,
-            _ => unreachable!("지정가 주문만 호가에 존재합니다."),
+            _ => return None,
         };
 
-        Self {
+        Some(Self {
             order_id: order.order_id,
             account_id: order.account_id,
             price,
             remaining_qty: order.remaining_qty(),
-        }
+        })
     }
 
     fn as_participant(&self) -> TradeParticipant {
@@ -92,7 +93,7 @@ impl Matcher {
             OrderKind::Limit {
                 price, quantity, ..
             } => (*price, *quantity),
-            _ => unreachable!("지정가 FOK 주문 전용"),
+            _ => return Self::invalid_order_kind(&order),
         };
 
         if !book.can_fully_fill(order.side, price, required) {
@@ -112,7 +113,7 @@ impl Matcher {
     fn process_market_buy(order: Order, book: &mut OrderBook) -> Vec<EngineEvent> {
         let required_quote = match &order.kind {
             OrderKind::MarketBuy { quote_qty } => *quote_qty,
-            _ => unreachable!("시장가 매수 전용"),
+            _ => return Self::invalid_order_kind(&order),
         };
 
         if !book.can_fully_fill_quote(required_quote) {
@@ -151,7 +152,7 @@ impl Matcher {
     fn process_market_sell(order: Order, book: &mut OrderBook) -> Vec<EngineEvent> {
         let required = match &order.kind {
             OrderKind::MarketSell { quantity } => *quantity,
-            _ => unreachable!("시장가 매도 전용"),
+            _ => return Self::invalid_order_kind(&order),
         };
 
         if !book.can_fully_fill(order.side, Price::zero(), required) {
@@ -171,7 +172,7 @@ impl Matcher {
             Side::Buy => book.best_bid(),
             Side::Sell => book.best_ask(),
         }
-        .map(MakerInfo::new)
+        .and_then(MakerInfo::new)
     }
 
     // 체결 가능 여부 확인 - 시장가는 항상 true
@@ -227,6 +228,14 @@ impl Matcher {
             fill_qty,
             fill_quote,
         )
+    }
+
+    fn invalid_order_kind(order: &Order) -> Vec<EngineEvent> {
+        vec![EngineEvent::Rejected {
+            order_id: order.order_id,
+            account_id: order.account_id,
+            reason: EngineError::InvlidOrderKind,
+        }]
     }
 }
 
