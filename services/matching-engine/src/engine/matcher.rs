@@ -126,21 +126,20 @@ impl Matcher {
 
         let mut taker = order;
         let mut trades = Vec::new();
-        let mut remaining_quote = required_quote;
 
-        while remaining_quote > QuoteQty::zero() {
+        while !taker.is_fully_filled() {
             let Some(maker) = Self::get_maker_info(Side::Sell, book) else {
                 break;
             };
 
-            let Some((fill_qty, fill_quote)) = Self::market_buy_fill(remaining_quote, &maker)
+            let Some((fill_qty, fill_quote)) =
+                Self::market_buy_fill(required_quote - taker.filled_quote_qty, &maker)
             else {
                 break;
             };
 
             book.fill(&maker.order_id, fill_qty);
             taker.fill(fill_qty, fill_quote);
-            remaining_quote -= fill_quote;
 
             trades.push(Self::make_trade(&taker, maker, fill_qty, fill_quote));
         }

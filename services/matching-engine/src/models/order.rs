@@ -31,13 +31,13 @@ impl Order {
         }
     }
 
-    /// Limit / MarketSell 전용
+    /// 전량 체결 되었는지 확인
     pub fn is_fully_filled(&self) -> bool {
         match &self.kind {
             OrderKind::Limit { quantity, .. } | OrderKind::MarketSell { quantity } => {
                 *quantity == self.filled_qty
             }
-            OrderKind::MarketBuy { .. } => unreachable!("시장가 매수 주문은 수량이 없습니다."),
+            OrderKind::MarketBuy { quote_qty } => self.filled_quote_qty >= *quote_qty,
         }
     }
 
