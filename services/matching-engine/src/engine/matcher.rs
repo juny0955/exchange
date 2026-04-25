@@ -233,7 +233,7 @@ impl Matcher {
         vec![EngineEvent::Rejected {
             order_id: order.order_id,
             account_id: order.account_id,
-            reason: EngineError::InvlidOrderKind,
+            reason: EngineError::InvalidOrderKind,
         }]
     }
 }

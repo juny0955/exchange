@@ -7,5 +7,5 @@ pub enum EngineError {
     SymbolNotFound,
 
     #[error("잘못된 주문 종류입니다")]
-    InvlidOrderKind,
+    InvalidOrderKind,
 }
