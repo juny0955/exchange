@@ -10,6 +10,7 @@ pub struct KafkaConfig {
 }
 
 impl KafkaConfig {
+    // TODO 설정 가져오기
     pub fn from_env() -> Result<Self, KafkaConsumerError> {
         Ok(Self {
             bootstrap_servers: "localhost:9092".to_string(),

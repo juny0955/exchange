@@ -5,4 +5,7 @@ pub enum KafkaConsumerError {
 
     #[error("잘못된 페이로드: {0}")]
     InvalidPayload(String),
+
+    #[error("JSON 역직렬화 실패: {0}")]
+    Decode(#[from] serde_json::Error),
 }
