@@ -59,7 +59,7 @@ impl OrderBook {
                 OrderKind::Limit { price, .. } => price,
                 _ => unreachable!("only limit orders can rest on the book"),
             };
-            let quote = QuoteQty::new(price.value() * qty.value());
+            let quote = *price * qty;
             order.fill(qty, quote);
 
             if order.is_fully_filled() {
