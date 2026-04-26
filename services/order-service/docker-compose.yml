@@ -84,7 +84,7 @@ services:
             "transforms.outbox.route.by.field": "event_type",
             "transforms.outbox.route.topic.replacement": "order.$${routedByValue}",
             "transforms.outbox.table.field.event.id": "outbox_id",
-            "transforms.outbox.table.field.event.key": "order_id",
+            "transforms.outbox.table.field.event.key": "partition_key",
             "transforms.outbox.table.field.event.type": "event_type",
             "transforms.outbox.table.field.event.payload": "payload",
             "transforms.outbox.table.expand.json.payload": "true"

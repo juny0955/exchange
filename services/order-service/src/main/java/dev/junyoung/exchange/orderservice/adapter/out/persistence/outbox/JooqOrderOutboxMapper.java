@@ -19,6 +19,7 @@ public final class JooqOrderOutboxMapper {
 		record.setOrderId(orderOutbox.getOrderId().value());
 		record.setAggregateType(orderOutbox.getAggregateType());
 		record.setEventType(orderOutbox.getType().name());
+		record.setPartitionKey(orderOutbox.getPartitionKey());
 		record.setPayload(JSON.json(orderOutbox.getPayload()));
 		record.setStatus(orderOutbox.getStatus().name());
 		record.setRetryCount(orderOutbox.getRetryCount());
@@ -33,6 +34,7 @@ public final class JooqOrderOutboxMapper {
 			new OrderId(record.getOrderId()),
 			record.getAggregateType(),
 			EventType.valueOf(record.getEventType()),
+			record.getPartitionKey(),
 			record.getPayload().data(),
 			OutboxStatus.valueOf(record.getStatus()),
 			record.getRetryCount(),

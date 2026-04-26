@@ -20,7 +20,8 @@ public class OrderOutboxFactory {
 	public OrderOutbox placeOrder(Order order) {
 		PlaceOrderEvent event = PlaceOrderEvent.of(order);
 		String payload = objectMapper.writeValueAsString(event);
-		return OrderOutbox.create(order.getOrderId(), EventType.PLACE_ORDER, payload);
+		String partitionKey = order.getSymbol().getTicker();
+		return OrderOutbox.create(order.getOrderId(), EventType.PLACE_ORDER, partitionKey, payload);
 	}
 
     public OrderOutbox cancelOrder(Order order) {
@@ -30,6 +31,7 @@ public class OrderOutboxFactory {
 			OrderSymbolEvent.of(order.getSymbol())
 		);
 		String payload = objectMapper.writeValueAsString(event);
-		return OrderOutbox.create(order.getOrderId(), EventType.CANCEL_ORDER, payload);
+		String partitionKey = order.getSymbol().getTicker();
+		return OrderOutbox.create(order.getOrderId(), EventType.CANCEL_ORDER, partitionKey, payload);
 	}
 }
