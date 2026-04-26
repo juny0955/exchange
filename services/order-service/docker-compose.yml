@@ -76,6 +76,9 @@ services:
             "database.server.name": "order-db",
             "topic.prefix": "order-db",
             "table.include.list": "public.order_outbox",
+            "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+            "value.converter.schemas.enable": "false",
+            "key.converter": "org.apache.kafka.connect.storage.StringConverter",
             "transforms": "outbox",
             "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
             "transforms.outbox.route.by.field": "event_type",
@@ -84,7 +87,7 @@ services:
             "transforms.outbox.table.field.event.key": "order_id",
             "transforms.outbox.table.field.event.type": "event_type",
             "transforms.outbox.table.field.event.payload": "payload",
-            "transforms.outbox.table.expand.payload": "true"
+            "transforms.outbox.table.expand.json.payload": "true"
          }
       }'
     networks:
