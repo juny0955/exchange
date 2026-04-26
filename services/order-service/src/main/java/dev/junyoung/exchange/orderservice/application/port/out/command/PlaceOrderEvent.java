@@ -11,7 +11,7 @@ import java.util.UUID;
 public record PlaceOrderEvent(
     UUID orderId,
     UUID accountId,
-    String symbol,
+    OrderSymbolEvent symbol,
     Side side,
     OrderType orderType,
     TimeInForce tif,
@@ -23,7 +23,7 @@ public record PlaceOrderEvent(
         return new PlaceOrderEvent(
             order.getOrderId().value(),
             order.getAccountId().value(),
-            order.getSymbol().getTicker(),
+            OrderSymbolEvent.of(order.getSymbol()),
             order.getSide(),
             order.getOrderType(),
             order.getTif(),

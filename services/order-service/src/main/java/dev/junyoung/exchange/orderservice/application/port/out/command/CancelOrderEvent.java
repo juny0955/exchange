@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record CancelOrderEvent(
     UUID orderId,
-    UUID accountId
+    UUID accountId,
+    OrderSymbolEvent symbol
 ) {
 }
