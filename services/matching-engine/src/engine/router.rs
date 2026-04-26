@@ -28,4 +28,8 @@ impl EngineRouter {
             None => Err(EngineError::SymbolNotFound),
         }
     }
+
+    pub fn close(&mut self) {
+        self.workers.clear();
+    }
 }

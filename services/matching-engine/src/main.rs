@@ -5,49 +5,36 @@ use matching_engine::{
     models::Symbol,
 };
 use std::process::exit;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
 fn main() {
     let kafka_config = init_kafka_config();
-
     let (event_sender, event_receiver) = channel::unbounded::<EngineEvent>();
     let manager = init_engine_manager(event_sender);
 
-    let consumer = init_kafka_consumer(kafka_config, manager);
+    let shutdown = Arc::new(AtomicBool::new(false));
+    let shutdown_signal = shutdown.clone();
+    ctrlc::set_handler(move || {
+        shutdown_signal.store(true, Ordering::Relaxed);
+    })
+    .expect("Ctrl-C 시그널 핸들러 등록 실패");
+
+    let consumer = init_kafka_consumer(kafka_config, manager, shutdown.clone());
 
     thread::scope(|scope| {
-        scope.spawn(|| {
-            consumer.run();
+        let manager_handle = scope.spawn(|| {
+            let manager = consumer.run();
+            manager.shutdown();
         });
 
         // 이벤트 수신 TODO producer 교체
         for event in event_receiver {
-            match event {
-                EngineEvent::Matched(trades) => {
-                    println!("체결: {:?}", trades)
-                }
-                EngineEvent::Canceled {
-                    order_id,
-                    account_id,
-                    reason,
-                } => {
-                    println!(
-                        "취소: order_id={:?}, account_id={:?}, reason={:?}",
-                        order_id, account_id, reason
-                    )
-                }
-                EngineEvent::Rejected {
-                    order_id,
-                    account_id,
-                    reason,
-                } => {
-                    println!(
-                        "거부: order_id={:?}, account_id={:?}, reason={:?}",
-                        order_id, account_id, reason
-                    )
-                }
-            }
+            handle_event(event);
         }
+
+        manager_handle.join().expect("스레드 panic!");
     });
 }
 
@@ -71,12 +58,44 @@ fn init_engine_manager(event_sender: Sender<EngineEvent>) -> EngineManager {
     engine_manager
 }
 
-fn init_kafka_consumer(kafka_config: KafkaConfig, manager: EngineManager) -> KafkaConsumer {
-    match KafkaConsumer::new(kafka_config, manager) {
+fn init_kafka_consumer(
+    kafka_config: KafkaConfig,
+    manager: EngineManager,
+    shutdown: Arc<AtomicBool>,
+) -> KafkaConsumer {
+    match KafkaConsumer::new(kafka_config, manager, shutdown) {
         Ok(c) => c,
         Err(e) => {
             eprintln!("KafkaConsumer 초기화 실패: {e}");
             exit(1);
+        }
+    }
+}
+
+fn handle_event(event: EngineEvent) {
+    match event {
+        EngineEvent::Matched(trades) => {
+            println!("체결: {:?}", trades)
+        }
+        EngineEvent::Canceled {
+            order_id,
+            account_id,
+            reason,
+        } => {
+            println!(
+                "취소: order_id={:?}, account_id={:?}, reason={:?}",
+                order_id, account_id, reason
+            )
+        }
+        EngineEvent::Rejected {
+            order_id,
+            account_id,
+            reason,
+        } => {
+            println!(
+                "거부: order_id={:?}, account_id={:?}, reason={:?}",
+                order_id, account_id, reason
+            )
         }
     }
 }

@@ -52,7 +52,9 @@ impl EngineManager {
         }
     }
 
-    pub fn shutdown(&mut self) {
+    pub fn shutdown(mut self) {
+        self.router.close();
+        drop(self.event_sender);
         for handle in self.worker_handles.drain(..) {
             let _ = handle.join();
         }

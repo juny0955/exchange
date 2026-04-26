@@ -1,3 +1,6 @@
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use crate::engine::EngineManager;
 use crate::kafka::config::KafkaConfig;
 use crate::kafka::dto::{CancelOrderDto, PlaceOrderDto};
@@ -9,10 +12,15 @@ pub struct KafkaConsumer {
     consumer: BaseConsumer,
     config: KafkaConfig,
     manager: EngineManager,
+    shutdown: Arc<AtomicBool>,
 }
 
 impl KafkaConsumer {
-    pub fn new(config: KafkaConfig, manager: EngineManager) -> Result<Self, KafkaConsumerError> {
+    pub fn new(
+        config: KafkaConfig,
+        manager: EngineManager,
+        shutdown: Arc<AtomicBool>,
+    ) -> Result<Self, KafkaConsumerError> {
         let consumer: BaseConsumer = ClientConfig::new()
             .set("bootstrap.servers", &config.bootstrap_servers)
             .set("group.id", &config.group_id)
@@ -27,11 +35,12 @@ impl KafkaConsumer {
             consumer,
             config,
             manager,
+            shutdown,
         })
     }
 
-    pub fn run(&self) {
-        loop {
+    pub fn run(self) -> EngineManager {
+        while !self.shutdown.load(Ordering::Relaxed) {
             match self.consumer.poll(self.config.poll_timeout) {
                 None => continue,
                 Some(Err(e)) => {
@@ -64,6 +73,7 @@ impl KafkaConsumer {
                 }
             }
         }
+        self.manager
     }
 
     fn handle_place(&self, payload: &[u8]) -> Result<(), KafkaConsumerError> {
