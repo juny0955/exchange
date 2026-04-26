@@ -1,5 +1,4 @@
 use crate::models::{Order, OrderId, OrderKind, Price, Quantity, QuoteQty, Side};
-use rust_decimal::Decimal;
 use std::{
     cmp::Reverse,
     collections::{BTreeMap, HashMap, VecDeque},
@@ -102,9 +101,6 @@ impl OrderBook {
             if self.has_enough_quote_in_queue(queue, *price, &mut remaining) {
                 return true;
             }
-            if remaining.value() < price.value() {
-                return false;
-            }
         }
         false
     }
@@ -159,16 +155,17 @@ impl OrderBook {
     ) -> bool {
         for order_id in queue {
             if let Some(order) = self.index.get(order_id) {
-                let affordable_qty = (*remaining / price).floor();
+                let affordable_qty = *remaining / price;
                 if affordable_qty.is_zero() {
                     return false;
                 }
 
-                let fill_qty = order.remaining_qty().min(affordable_qty);
-                *remaining -= fill_qty * price;
-                if remaining.value() <= Decimal::ZERO {
+                // TODO: 심볼별 lot_size가 도입되면 실제 체결 로직과 같은 수량 정규화를 공유해야 한다.
+                if order.remaining_qty() >= affordable_qty {
                     return true;
                 }
+
+                *remaining -= order.remaining_qty() * price;
             }
         }
         false
@@ -461,12 +458,28 @@ mod tests {
         assert!(!book.can_fully_fill_quote(QuoteQty::new(Decimal::from(1000))));
     }
 
-    // 남은 금액으로 다음 호가를 못 사면 실패한다
+    // 남은 금액으로 다음 호가의 소수 수량을 살 수 있다
     #[test]
-    fn fok_quote_fails_when_remaining_quote_cannot_buy_next_level() {
+    fn fok_quote_allows_fractional_quantity_at_next_level() {
         let mut book = OrderBook::new();
         book.add(limit_sell(100, 5));
         book.add(limit_sell(200, 10));
-        assert!(!book.can_fully_fill_quote(QuoteQty::new(Decimal::from(1000))));
+        assert!(book.can_fully_fill_quote(QuoteQty::new(Decimal::from(550))));
+    }
+
+    // 단일 호가에서도 주문 금액만큼 소수 수량 체결 가능하다
+    #[test]
+    fn fok_quote_allows_fractional_quantity_single_level() {
+        let mut book = OrderBook::new();
+        book.add(limit_sell(200, 10));
+        assert!(book.can_fully_fill_quote(QuoteQty::new(Decimal::from(50))));
+    }
+
+    // 나눗셈이 딱 떨어지지 않아도 주문 금액 전액 매수 가능하다
+    #[test]
+    fn fok_quote_allows_repeating_decimal_quantity() {
+        let mut book = OrderBook::new();
+        book.add(limit_sell(3, 100));
+        assert!(book.can_fully_fill_quote(QuoteQty::new(Decimal::from(100))));
     }
 }

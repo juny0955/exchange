@@ -115,10 +115,6 @@ impl Quantity {
         self.0
     }
 
-    pub fn floor(self) -> Self {
-        Self(self.0.floor())
-    }
-
     pub fn is_zero(&self) -> bool {
         self.0.is_zero()
     }

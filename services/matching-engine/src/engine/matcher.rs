@@ -192,12 +192,17 @@ impl Matcher {
         remaining_quote: QuoteQty,
         maker: &MakerInfo,
     ) -> Option<(Quantity, QuoteQty)> {
-        let affordable_qty = (remaining_quote / maker.price).floor();
+        let affordable_qty = remaining_quote / maker.price;
         if affordable_qty.is_zero() {
             return None;
         }
 
-        let fill_qty = maker.remaining_qty.min(affordable_qty);
+        // TODO: 심볼별 lot_size가 도입되면 affordable_qty를 lot 단위로 정규화해야 한다.
+        if maker.remaining_qty >= affordable_qty {
+            return Some((affordable_qty, remaining_quote));
+        }
+
+        let fill_qty = maker.remaining_qty;
         let fill_quote = maker.price * fill_qty;
         Some((fill_qty, fill_quote))
     }
@@ -587,33 +592,35 @@ mod tests {
 
     // ── Market Sell ──────────────────────────────────────────────────────────
 
-    // 잔여 금액이 다음 호가를 못 사면 취소된다
+    // 잔여 금액이 다음 호가의 소수 수량으로 체결된다
     #[test]
-    fn market_buy_cancels_when_remaining_quote_cannot_buy_next_level() {
+    fn market_buy_fills_fractional_quantity_at_next_level() {
         let mut book = OrderBook::new();
         book.add(limit_order(Side::Sell, 100, 5, TimeInForce::Gtc));
         book.add(limit_order(Side::Sell, 200, 10, TimeInForce::Gtc));
 
         let events = Matcher::match_order(market_buy_order(550), &mut book);
 
-        assert!(!events.iter().any(|e| matches!(e, EngineEvent::Matched(_))));
-        assert!(matches!(
-            cancel_reason(&events),
-            Some(CancelReason::FokExpired)
-        ));
+        let trades = matched_trades(events);
+        assert_eq!(trades.len(), 2);
+        assert_eq!(trades[0].quantity, Quantity::new(Decimal::from(5)));
+        assert_eq!(trades[0].quote_qty, QuoteQty::new(Decimal::from(500)));
+        assert_eq!(trades[1].quantity, Quantity::new(Decimal::new(25, 2)));
+        assert_eq!(trades[1].quote_qty, QuoteQty::new(Decimal::from(50)));
     }
 
-    // 체결 대금은 가격과 수량의 곱과 같다
+    // 나눗셈이 딱 떨어지지 않아도 주문 금액 전액으로 체결된다
     #[test]
-    fn market_buy_trades_keep_quote_equal_to_price_times_quantity() {
+    fn market_buy_consumes_quote_when_division_is_repeating_decimal() {
         let mut book = OrderBook::new();
-        book.add(limit_order(Side::Sell, 100, 10, TimeInForce::Gtc));
+        book.add(limit_order(Side::Sell, 3, 100, TimeInForce::Gtc));
 
-        let events = Matcher::match_order(market_buy_order(500), &mut book);
+        let events = Matcher::match_order(market_buy_order(100), &mut book);
 
         let trades = matched_trades(events);
         assert_eq!(trades.len(), 1);
-        assert_eq!(trades[0].quote_qty, trades[0].price * trades[0].quantity,);
+        assert_eq!(trades[0].quote_qty, QuoteQty::new(Decimal::from(100)));
+        assert_eq!(book.best_ask().unwrap().filled_quote_qty, QuoteQty::new(Decimal::from(100)));
     }
 
     // 시장가 매수는 여러 호가로 나뉘어 체결된다
