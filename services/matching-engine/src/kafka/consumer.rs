@@ -7,6 +7,7 @@ use crate::kafka::dto::{CancelOrderDto, PlaceOrderDto};
 use crate::kafka::error::KafkaConsumerError;
 use rdkafka::consumer::{BaseConsumer, CommitMode, Consumer};
 use rdkafka::{ClientConfig, Message};
+use tracing::{error, info_span, warn};
 
 pub struct KafkaConsumer {
     consumer: BaseConsumer,
@@ -44,15 +45,27 @@ impl KafkaConsumer {
             match self.consumer.poll(self.config.poll_timeout) {
                 None => continue,
                 Some(Err(e)) => {
-                    eprintln!("kafka poll 오류: {e}");
+                    error!(error = %e, "kafka poll 오류");
                     continue;
                 }
                 Some(Ok(message)) => {
-                    let topic = message.topic().to_string();
+                    let topic = message.topic();
+                    let span = info_span!(
+                        "kafka_message",
+                        topic = %topic,
+                        partition = message.partition(),
+                        offset = message.offset(),
+                    );
+                    let _enter = span.enter();
+
                     let payload = match message.payload() {
                         Some(p) => p,
                         None => {
-                            let _ = self.consumer.commit_message(&message, CommitMode::Async);
+                            if let Err(e) =
+                                self.consumer.commit_message(&message, CommitMode::Async)
+                            {
+                                warn!(error = %e, "오프셋 commit 실패");
+                            }
                             continue;
                         }
                     };
@@ -66,10 +79,12 @@ impl KafkaConsumer {
                     };
 
                     if let Err(e) = result {
-                        eprintln!("Message 처리 실패: {e}");
+                        error!(error = %e, "메시지 처리 실패");
                     }
 
-                    let _ = self.consumer.commit_message(&message, CommitMode::Async);
+                    if let Err(e) = self.consumer.commit_message(&message, CommitMode::Async) {
+                        warn!(error = %e, "오프셋 commit 실패");
+                    }
                 }
             }
         }

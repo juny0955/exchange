@@ -4,12 +4,16 @@ use matching_engine::{
     engine::{EngineEvent, EngineManager},
     models::Symbol,
 };
+use std::io::{IsTerminal, stdout};
 use std::process::exit;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
+use tracing::{error, info};
+use tracing_subscriber::EnvFilter;
 
 fn main() {
+    init_tracing();
     let kafka_config = init_kafka_config();
     let (event_sender, event_receiver) = channel::unbounded::<EngineEvent>();
     let manager = init_engine_manager(event_sender);
@@ -38,11 +42,31 @@ fn main() {
     });
 }
 
+fn init_tracing() {
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+
+    let json = std::env::var("LOG_FORMAT")
+        .map(|v| v.eq_ignore_ascii_case("json"))
+        .unwrap_or(false);
+
+    if json {
+        tracing_subscriber::fmt()
+            .json()
+            .with_env_filter(filter)
+            .init();
+    } else {
+        tracing_subscriber::fmt()
+            .with_env_filter(filter)
+            .with_ansi(IsTerminal::is_terminal(&stdout()))
+            .init();
+    }
+}
+
 fn init_kafka_config() -> KafkaConfig {
     match KafkaConfig::from_env() {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("KafkaConfig 로딩 실패: {e}");
+            error!(error = %e, "KafkaConfig 로딩 실패");
             exit(1);
         }
     }
@@ -66,7 +90,7 @@ fn init_kafka_consumer(
     match KafkaConsumer::new(kafka_config, manager, shutdown) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("KafkaConsumer 초기화 실패: {e}");
+            error!(error = %e, "KafkaConsumer 초기화 실패");
             exit(1);
         }
     }
@@ -75,27 +99,21 @@ fn init_kafka_consumer(
 fn handle_event(event: EngineEvent) {
     match event {
         EngineEvent::Matched(trades) => {
-            println!("체결: {:?}", trades)
+            info!(trade_count = trades.len(), trades = ?trades, "체결")
         }
         EngineEvent::Canceled {
             order_id,
             account_id,
             reason,
         } => {
-            println!(
-                "취소: order_id={:?}, account_id={:?}, reason={:?}",
-                order_id, account_id, reason
-            )
+            info!(?order_id, ?account_id, ?reason, "취소");
         }
         EngineEvent::Rejected {
             order_id,
             account_id,
             reason,
         } => {
-            println!(
-                "거부: order_id={:?}, account_id={:?}, reason={:?}",
-                order_id, account_id, reason
-            )
+            info!(?order_id, ?account_id, ?reason, "거부");
         }
     }
 }

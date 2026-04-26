@@ -1,4 +1,5 @@
 use crossbeam::channel::{Receiver, Sender};
+use tracing::warn;
 
 use crate::engine::command::OrderCommand;
 use crate::engine::event::{CancelReason, EngineEvent};
@@ -44,7 +45,9 @@ impl SymbolWorker {
             };
 
             for event in results {
-                let _ = self.event_sender.send(event);
+                if let Err(e) = self.event_sender.send(event) {
+                    warn!(error = %e, "EngineEvent 전송 실패");
+                }
             }
         }
     }

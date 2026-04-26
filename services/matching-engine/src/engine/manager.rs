@@ -1,6 +1,7 @@
 use crossbeam::channel;
 use crossbeam::channel::Sender;
 use std::thread::{self, JoinHandle};
+use tracing::{info, warn};
 
 use crate::engine::OrderCommand;
 use crate::{
@@ -37,18 +38,25 @@ impl EngineManager {
             .expect("worker 스레드 실행 실패");
 
         self.worker_handles.push(handle);
+
+        let ticker = symbol.ticker();
         self.router.add_worker(symbol, command_tx);
+        info!(symbol = %ticker, "심볼 워커 등록");
     }
 
     pub fn submit(&self, command: OrderCommand) {
         let order_id = command.order_id();
         let account_id = command.account_id();
         if let Err(engine_error) = self.router.dispatch(command) {
-            let _ = self.event_sender.send(EngineEvent::Rejected {
+            let rejected_event = EngineEvent::Rejected {
                 order_id,
                 account_id,
                 reason: engine_error,
-            });
+            };
+
+            if let Err(e) = self.event_sender.send(rejected_event) {
+                warn!(error = %e, ?order_id, "Rejected 이벤트 전송 실패");
+            }
         }
     }
 
@@ -56,7 +64,9 @@ impl EngineManager {
         self.router.close();
         drop(self.event_sender);
         for handle in self.worker_handles.drain(..) {
-            let _ = handle.join();
+            if let Err(e) = handle.join() {
+                warn!(?e, "워커 스레드 panic");
+            }
         }
     }
 }
