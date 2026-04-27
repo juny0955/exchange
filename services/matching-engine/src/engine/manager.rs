@@ -58,6 +58,13 @@ impl EngineManager {
                 warn!(error = %e, ?order_id, "Rejected 이벤트 전송 실패");
             }
         }
+
+        if let Err(e) = self.event_sender.send(EngineEvent::Accepted {
+            order_id,
+            account_id,
+        }) {
+            warn!(error = %e, ?order_id, "Accepted 이벤트 전송 실패");
+        }
     }
 
     pub fn shutdown(mut self) {

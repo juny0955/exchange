@@ -98,6 +98,9 @@ fn init_kafka_consumer(
 
 fn handle_event(event: EngineEvent) {
     match event {
+        EngineEvent::Accepted { order_id, account_id } => {
+            info!(?order_id, ?account_id, "접수");
+        }
         EngineEvent::Matched(trades) => {
             info!(trade_count = trades.len(), trades = ?trades, "체결")
         }
