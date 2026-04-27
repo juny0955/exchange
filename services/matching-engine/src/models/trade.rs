@@ -1,5 +1,6 @@
+use chrono::{DateTime, Utc};
+
 use crate::models::{AccountId, OrderId, Price, Quantity, QuoteQty, Side, Symbol, TradeId};
-use std::time::Instant;
 
 pub struct TradeParticipant {
     pub account_id: AccountId,
@@ -17,7 +18,7 @@ pub struct Trade {
     pub price: Price,
     pub quantity: Quantity,
     pub quote_qty: QuoteQty,
-    pub trade_at: Instant,
+    pub trade_at: DateTime<Utc>,
 }
 
 impl Trade {
@@ -45,7 +46,7 @@ impl Trade {
             price,
             quantity,
             quote_qty,
-            trade_at: Instant::now(),
+            trade_at: Utc::now(),
         }
     }
 }
