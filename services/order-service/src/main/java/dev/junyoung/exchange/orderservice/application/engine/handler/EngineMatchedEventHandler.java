@@ -15,10 +15,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -30,29 +32,39 @@ public class EngineMatchedEventHandler implements HandleEngineMatchedEventUseCas
 	private final TradeRepository tradeRepository;
 
 	@Override
-	public void handle(EngineMatchedCommand command) {
-		List<Order> orders = orderRepository.findAllByIdForUpdate(List.of(command.buyOrderId(), command.sellOrderId()));
+	public void handle(List<EngineMatchedCommand> commands) {
+		List<OrderId> orderIds = commands.stream()
+			.flatMap(c -> Stream.of(c.buyOrderId(), c.sellOrderId()))
+			.distinct()
+			.toList();
+
+		List<Order> orders = orderRepository.findAllByIdForUpdate(orderIds);
 
 		Map<OrderId, Order> orderMap = orders.stream()
 			.collect(Collectors.toMap(Order::getOrderId, Function.identity()));
 
-		Order buyOrder = orderMap.get(command.buyOrderId());
-		Order sellOrder = orderMap.get(command.sellOrderId());
+		List<Trade> trades = new ArrayList<>();
+		List<OrderHistory> histories = new ArrayList<>();
+		for (EngineMatchedCommand command : commands) {
+			Order buyOrder = orderMap.get(command.buyOrderId());
+			Order sellOrder = orderMap.get(command.sellOrderId());
 
-		OrderStatus buyOrderFromStatus = buyOrder.getStatus();
-		OrderStatus sellOrderFromStatus = sellOrder.getStatus();
+			OrderStatus buyOrderFromStatus = buyOrder.getStatus();
+			OrderStatus sellOrderFromStatus = sellOrder.getStatus();
 
-		buyOrder.fill(command.quantity(), command.quoteQty());
-		sellOrder.fill(command.quantity(), command.quoteQty());
+			buyOrder.fill(command.quantity(), command.quoteQty());
+			sellOrder.fill(command.quantity(), command.quoteQty());
 
-		Trade buyTrade = Trade.buyOf(command.tradeId(), buyOrder.getSymbol(), command.buyOrderId(), command.sellOrderId(), command.price(), command.quantity(), command.quoteQty(), command.tradeAt());
-		Trade sellTrade = Trade.sellOf(command.tradeId(), sellOrder.getSymbol(), command.sellOrderId(), command.buyOrderId(), command.price(), command.quantity(), command.quoteQty(), command.tradeAt());
+			// TODO Trade 하나로 갈지 두개로 갈지 고민
+			trades.add(Trade.buyOf(command.tradeId(), buyOrder.getSymbol(), command.buyOrderId(), command.sellOrderId(), command.price(), command.quantity(), command.quoteQty(), command.tradeAt()));
+			trades.add(Trade.sellOf(command.tradeId(), sellOrder.getSymbol(), command.sellOrderId(), command.buyOrderId(), command.price(), command.quantity(), command.quoteQty(), command.tradeAt()));
 
-		OrderHistory buyOrderHistory = OrderHistory.createTransition(buyOrder, buyOrderFromStatus, OrderHisReason.ENGINE_MATCHED);
-		OrderHistory sellOrderHistory = OrderHistory.createTransition(sellOrder, sellOrderFromStatus, OrderHisReason.ENGINE_MATCHED);
+			histories.add(OrderHistory.createTransition(buyOrder, buyOrderFromStatus, OrderHisReason.ENGINE_MATCHED));
+			histories.add(OrderHistory.createTransition(sellOrder, sellOrderFromStatus, OrderHisReason.ENGINE_MATCHED));
+		}
 
-		tradeRepository.saveAll(List.of(buyTrade, sellTrade));
-		orderRepository.updateFill(List.of(buyOrder, sellOrder));
-		orderHistoryRepository.saveAll(List.of(buyOrderHistory, sellOrderHistory));
+		tradeRepository.saveAll(trades);
+		orderRepository.updateFill(new ArrayList<>(orderMap.values()));
+		orderHistoryRepository.saveAll(histories);
 	}
 }

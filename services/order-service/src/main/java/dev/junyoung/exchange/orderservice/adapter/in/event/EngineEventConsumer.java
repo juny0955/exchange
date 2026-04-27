@@ -6,6 +6,7 @@ import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineCancele
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineMatchedMessage;
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineRejectedMessage;
 import dev.junyoung.exchange.orderservice.application.port.in.SaveEngineFailedEventUseCase;
+import dev.junyoung.exchange.orderservice.application.port.in.command.EngineMatchedCommand;
 import dev.junyoung.exchange.orderservice.application.port.in.command.SaveEngineFailedEventCommand;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineAcceptedEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineCanceledEventUseCase;
@@ -22,6 +23,8 @@ import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
+
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -52,8 +55,16 @@ public class EngineEventConsumer {
         groupId = "${kafka.listeners.engine.group-id}"
     )
     public void consumeMatched(ConsumerRecord<String, String> record) {
-        EngineMatchedMessage message = objectMapper.readValue(record.value(), EngineMatchedMessage.class);
-        matchedEventUseCase.handle(message.toCommand());
+        List<EngineMatchedMessage> messages = objectMapper.readValue(
+            record.value(),
+            objectMapper.getTypeFactory().constructCollectionType(List.class, EngineMatchedMessage.class)
+        );
+
+        List<EngineMatchedCommand> commands = messages.stream()
+            .map(EngineMatchedMessage::toCommand)
+            .toList();
+
+        matchedEventUseCase.handle(commands);
     }
 
     @EngineRetryableTopic
