@@ -63,7 +63,7 @@ public class EngineEventConsumer {
     )
     public void consumeCanceled(ConsumerRecord<String, String> record) {
         EngineCanceledMessage message = objectMapper.readValue(record.value(), EngineCanceledMessage.class);
-        canceledEventUseCase.handle(new OrderId(message.orderId()), new AccountId(message.accountId()));
+        canceledEventUseCase.handle(new OrderId(message.orderId()), new AccountId(message.accountId()), message.reason());
     }
 
     @EngineRetryableTopic
@@ -73,7 +73,7 @@ public class EngineEventConsumer {
     )
     public void consumeRejected(ConsumerRecord<String, String> record) {
         EngineRejectedMessage message = objectMapper.readValue(record.value(), EngineRejectedMessage.class);
-        rejectedEventUseCase.handle(new OrderId(message.orderId()), new AccountId(message.accountId()));
+        rejectedEventUseCase.handle(new OrderId(message.orderId()), new AccountId(message.accountId()), message.reason());
     }
 
     @DltHandler

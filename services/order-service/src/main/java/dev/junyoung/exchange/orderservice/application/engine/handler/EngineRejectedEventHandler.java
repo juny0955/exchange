@@ -4,6 +4,7 @@ import dev.junyoung.exchange.orderservice.application.engine.processor.EngineOrd
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineRejectedEventUseCase;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderHisReason;
+import dev.junyoung.exchange.orderservice.domain.model.enums.RejectReason;
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ public class EngineRejectedEventHandler implements HandleEngineRejectedEventUseC
 	private final EngineOrderStateTransitionProcessor processor;
 
 	@Override
-	public void handle(OrderId orderId, AccountId accountId) {
-		processor.process(orderId, accountId, Order::reject, OrderHisReason.ENGINE_REJECTED); // TODO detail 추가 필요
+	public void handle(OrderId orderId, AccountId accountId, RejectReason reason) {
+		processor.process(orderId, accountId, Order::reject, OrderHisReason.ENGINE_REJECTED, reason.name());
 	}
 }
