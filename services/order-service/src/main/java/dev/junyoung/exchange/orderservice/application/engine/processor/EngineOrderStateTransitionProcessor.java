@@ -27,7 +27,8 @@ public class EngineOrderStateTransitionProcessor {
         OrderId orderId,
         AccountId accountId,
         Consumer<Order> transition,
-        OrderHisReason reason
+        OrderHisReason reason,
+        String detail
     ) {
         Order order = orderRepository.findByIdAndAccountIdForUpdate(orderId, accountId)
             .orElseThrow(OrderNotFoundException::new);
@@ -37,6 +38,6 @@ public class EngineOrderStateTransitionProcessor {
         transition.accept(order);
 
         orderRepository.updateStatus(order);
-        orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, reason));
+        orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, reason, detail));
     }
 }

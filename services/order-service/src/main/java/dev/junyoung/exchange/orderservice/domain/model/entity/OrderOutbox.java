@@ -16,6 +16,7 @@ public class OrderOutbox {
 	private final OrderId orderId;
 	private final String aggregateType;
 	private final EventType type;
+	private final String partitionKey;
 	private final String payload;
 	private OutboxStatus status;
 	private int retryCount;
@@ -24,12 +25,13 @@ public class OrderOutbox {
 
 	private static final String AGGREGATE_TYPE = "ORDER";
 
-	public static OrderOutbox create(OrderId orderId, EventType type, String payload) {
+	public static OrderOutbox create(OrderId orderId, EventType type, String partitionKey, String payload) {
 		return new OrderOutbox(
 			OutboxId.newId(),
 			orderId,
 			AGGREGATE_TYPE,
 			type,
+			partitionKey,
 			payload,
 			OutboxStatus.PENDING,
 			0,

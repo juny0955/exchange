@@ -55,6 +55,7 @@ CREATE TABLE order_outbox (
     order_id        UUID NOT NULL,
     aggregate_type  VARCHAR(32) NOT NULL DEFAULT 'ORDER',
     event_type      VARCHAR(32) NOT NULL,
+    partition_key   VARCHAR(64) NOT NULL,
     payload         JSONB NOT NULL,
     status          VARCHAR(32) NOT NULL,
     retry_count     INT NOT NULL DEFAULT 0,

@@ -3,6 +3,7 @@ package dev.junyoung.exchange.orderservice.application.engine.handler;
 import dev.junyoung.exchange.orderservice.application.engine.processor.EngineOrderStateTransitionProcessor;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineCanceledEventUseCase;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
+import dev.junyoung.exchange.orderservice.domain.model.enums.CancelReason;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderHisReason;
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
@@ -16,7 +17,7 @@ public class EngineCanceledEventHandler implements HandleEngineCanceledEventUseC
 	private final EngineOrderStateTransitionProcessor processor;
 
 	@Override
-	public void handle(OrderId orderId, AccountId accountId) {
-		processor.process(orderId, accountId, Order::cancel, OrderHisReason.ENGINE_CANCELED);
+	public void handle(OrderId orderId, AccountId accountId, CancelReason reason) {
+		processor.process(orderId, accountId, Order::cancel, OrderHisReason.ENGINE_CANCELED, reason.name());
 	}
 }
