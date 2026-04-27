@@ -1,5 +1,6 @@
 package dev.junyoung.exchange.orderservice.application.engine.handler;
 
+import dev.junyoung.exchange.orderservice.application.exception.OrderNotFoundException;
 import dev.junyoung.exchange.orderservice.application.port.in.command.EngineMatchedCommand;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineMatchedEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.out.OrderHistoryRepository;
@@ -39,6 +40,10 @@ public class EngineMatchedEventHandler implements HandleEngineMatchedEventUseCas
 			.toList();
 
 		List<Order> orders = orderRepository.findAllByIdForUpdate(orderIds);
+
+		// NPE 방어용 (터질 가능성 거의 없음)
+		if (orders.size() != orderIds.size())
+			throw new OrderNotFoundException();
 
 		Map<OrderId, Order> orderMap = orders.stream()
 			.collect(Collectors.toMap(Order::getOrderId, Function.identity()));
