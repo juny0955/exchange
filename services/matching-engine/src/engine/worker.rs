@@ -27,28 +27,40 @@ impl SymbolWorker {
 
     pub fn run(mut self) {
         for command in &self.command_receiver {
-            let results = match command {
-                OrderCommand::Place(order) => Matcher::match_order(order, &mut self.order_book),
+            match command {
+                OrderCommand::Place(order) => {
+                    let order_id = order.order_id;
+                    let account_id = order.account_id;
+                    if let Err(e) = self.event_sender.send(EngineEvent::Accepted {
+                        symbol: order.symbol.clone(),
+                        order_id,
+                        account_id,
+                    }) {
+                        warn!(error = %e, ?order_id, "Accepted 이벤트 전송 실패");
+                    }
+
+                    for event in Matcher::match_order(order, &mut self.order_book) {
+                        if let Err(e) = self.event_sender.send(event) {
+                            warn!(error = %e, "EngineEvent 전송 실패");
+                        }
+                    }
+                }
                 OrderCommand::Cancel {
+                    symbol,
                     order_id,
                     account_id,
-                    ..
                 } => {
                     self.order_book.cancel(&order_id);
-
-                    vec![EngineEvent::Canceled {
+                    if let Err(e) = self.event_sender.send(EngineEvent::Canceled {
+                        symbol,
                         order_id,
                         account_id,
                         reason: CancelReason::UserRequest,
-                    }]
+                    }) {
+                        warn!(error = %e, "EngineEvent 전송 실패");
+                    }
                 }
             };
-
-            for event in results {
-                if let Err(e) = self.event_sender.send(event) {
-                    warn!(error = %e, "EngineEvent 전송 실패");
-                }
-            }
         }
     }
 }

@@ -1,5 +1,5 @@
 use crossbeam::channel::{self, Sender};
-use matching_engine::kafka::{KafkaConfig, KafkaConsumer};
+use matching_engine::kafka::{KafkaConfig, KafkaConsumer, KafkaProducer};
 use matching_engine::{
     engine::{EngineEvent, EngineManager},
     models::Symbol,
@@ -9,7 +9,7 @@ use std::process::exit;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
-use tracing::{error, info};
+use tracing::error;
 use tracing_subscriber::EnvFilter;
 
 fn main() {
@@ -25,7 +25,8 @@ fn main() {
     })
     .expect("Ctrl-C 시그널 핸들러 등록 실패");
 
-    let consumer = init_kafka_consumer(kafka_config, manager, shutdown.clone());
+    let consumer = init_kafka_consumer(kafka_config.clone(), manager, shutdown.clone());
+    let producer = init_kafka_producer(kafka_config);
 
     thread::scope(|scope| {
         let manager_handle = scope.spawn(|| {
@@ -33,10 +34,7 @@ fn main() {
             manager.shutdown();
         });
 
-        // 이벤트 수신 TODO producer 교체
-        for event in event_receiver {
-            handle_event(event);
-        }
+        producer.run(event_receiver);
 
         manager_handle.join().expect("스레드 panic!");
     });
@@ -96,24 +94,12 @@ fn init_kafka_consumer(
     }
 }
 
-fn handle_event(event: EngineEvent) {
-    match event {
-        EngineEvent::Matched(trades) => {
-            info!(trade_count = trades.len(), trades = ?trades, "체결")
-        }
-        EngineEvent::Canceled {
-            order_id,
-            account_id,
-            reason,
-        } => {
-            info!(?order_id, ?account_id, ?reason, "취소");
-        }
-        EngineEvent::Rejected {
-            order_id,
-            account_id,
-            reason,
-        } => {
-            info!(?order_id, ?account_id, ?reason, "거부");
+fn init_kafka_producer(kafka_config: KafkaConfig) -> KafkaProducer {
+    match KafkaProducer::new(kafka_config) {
+        Ok(p) => p,
+        Err(e) => {
+            error!(error = %e, "KafkaProducer 초기화 실패");
+            exit(1);
         }
     }
 }

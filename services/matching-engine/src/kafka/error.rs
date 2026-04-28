@@ -9,3 +9,12 @@ pub enum KafkaConsumerError {
     #[error("JSON 역직렬화 실패: {0}")]
     Decode(#[from] serde_json::Error),
 }
+
+#[derive(Debug, thiserror::Error)]
+pub enum KafkaProducerError {
+    #[error("rdkafka 오류: {0}")]
+    Kafka(#[from] rdkafka::error::KafkaError),
+
+    #[error("JSON 직렬화 실패: {0}")]
+    Encode(#[from] serde_json::Error),
+}

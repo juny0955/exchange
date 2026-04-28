@@ -47,8 +47,10 @@ impl EngineManager {
     pub fn submit(&self, command: OrderCommand) {
         let order_id = command.order_id();
         let account_id = command.account_id();
+        let symbol = command.symbol().clone();
         if let Err(engine_error) = self.router.dispatch(command) {
             let rejected_event = EngineEvent::Rejected {
+                symbol,
                 order_id,
                 account_id,
                 reason: engine_error,

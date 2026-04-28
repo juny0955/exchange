@@ -62,6 +62,13 @@ fn assert_no_event(event_rx: &crossbeam::channel::Receiver<EngineEvent>) {
     }
 }
 
+fn assert_accepted(event_rx: &crossbeam::channel::Receiver<EngineEvent>) {
+    match recv_event(event_rx) {
+        EngineEvent::Accepted { .. } => {}
+        other => panic!("expected Accepted, got: {:?}", other),
+    }
+}
+
 // 동일가 주문이 정상 체결된다
 #[test]
 fn test_limit_buy_sell_fully_matched() {
@@ -74,6 +81,8 @@ fn test_limit_buy_sell_fully_matched() {
         1,
         TimeInForce::Gtc,
     )));
+    assert_accepted(&event_rx);
+
     manager.submit(OrderCommand::Place(limit_order(
         btc_krw(),
         Side::Buy,
@@ -81,9 +90,10 @@ fn test_limit_buy_sell_fully_matched() {
         1,
         TimeInForce::Gtc,
     )));
+    assert_accepted(&event_rx);
 
     match recv_event(&event_rx) {
-        EngineEvent::Matched(trades) => {
+        EngineEvent::Matched { trades, .. } => {
             assert_eq!(trades.len(), 1);
             let trade = &trades[0];
             assert_eq!(trade.price.value(), Decimal::from(50_000_000));
@@ -105,6 +115,7 @@ fn test_ioc_no_liquidity_canceled() {
         1,
         TimeInForce::Ioc,
     )));
+    assert_accepted(&event_rx);
 
     match recv_event(&event_rx) {
         EngineEvent::Canceled { reason, .. } => {
@@ -126,6 +137,8 @@ fn test_partial_fill_then_rest_matched() {
         1,
         TimeInForce::Gtc,
     )));
+    assert_accepted(&event_rx);
+
     manager.submit(OrderCommand::Place(limit_order(
         btc_krw(),
         Side::Buy,
@@ -133,9 +146,10 @@ fn test_partial_fill_then_rest_matched() {
         2,
         TimeInForce::Gtc,
     )));
+    assert_accepted(&event_rx);
 
     match recv_event(&event_rx) {
-        EngineEvent::Matched(trades) => {
+        EngineEvent::Matched { trades, .. } => {
             assert_eq!(trades.len(), 1);
             assert_eq!(trades[0].quantity.value(), Decimal::from(1));
         }
@@ -149,9 +163,10 @@ fn test_partial_fill_then_rest_matched() {
         1,
         TimeInForce::Gtc,
     )));
+    assert_accepted(&event_rx);
 
     match recv_event(&event_rx) {
-        EngineEvent::Matched(trades) => {
+        EngineEvent::Matched { trades, .. } => {
             assert_eq!(trades.len(), 1);
             assert_eq!(trades[0].quantity.value(), Decimal::from(1));
         }
@@ -187,6 +202,7 @@ fn test_cancel_existing_order_prevents_later_match() {
     let resting_buy = limit_order(btc_krw(), Side::Buy, 50_000_000, 1, TimeInForce::Gtc);
 
     manager.submit(OrderCommand::Place(resting_buy.clone()));
+    assert_accepted(&event_rx);
     assert_no_event(&event_rx);
 
     manager.submit(OrderCommand::Cancel {
@@ -212,6 +228,7 @@ fn test_cancel_existing_order_prevents_later_match() {
         1,
         TimeInForce::Gtc,
     )));
+    assert_accepted(&event_rx);
     assert_no_event(&event_rx);
 }
 
@@ -242,10 +259,13 @@ fn test_cancel_filled_order_still_emits_user_request() {
     let aggressive_buy = limit_order(btc_krw(), Side::Buy, 50_000_000, 1, TimeInForce::Gtc);
 
     manager.submit(OrderCommand::Place(resting_sell.clone()));
+    assert_accepted(&event_rx);
+
     manager.submit(OrderCommand::Place(aggressive_buy));
+    assert_accepted(&event_rx);
 
     match recv_event(&event_rx) {
-        EngineEvent::Matched(trades) => assert_eq!(trades.len(), 1),
+        EngineEvent::Matched { trades, .. } => assert_eq!(trades.len(), 1),
         other => panic!("unexpected event: {:?}", other),
     }
 
@@ -281,6 +301,8 @@ fn test_symbols_route_to_independent_books() {
         1,
         TimeInForce::Gtc,
     )));
+    assert_accepted(&event_rx);
+
     manager.submit(OrderCommand::Place(limit_order(
         eth_krw(),
         Side::Buy,
@@ -288,6 +310,8 @@ fn test_symbols_route_to_independent_books() {
         1,
         TimeInForce::Gtc,
     )));
+    assert_accepted(&event_rx);
+
     assert_no_event(&event_rx);
 
     manager.submit(OrderCommand::Place(limit_order(
@@ -297,11 +321,12 @@ fn test_symbols_route_to_independent_books() {
         1,
         TimeInForce::Gtc,
     )));
+    assert_accepted(&event_rx);
 
     match recv_event(&event_rx) {
-        EngineEvent::Matched(trades) => {
+        EngineEvent::Matched { trades, .. } => {
             assert_eq!(trades.len(), 1);
-            assert_eq!(trades[0].symbol.base_asset, "BTC");
+            assert_eq!(trades[0].symbol.base_asset, "BTC".into());
         }
         other => panic!("unexpected event: {:?}", other),
     }
@@ -313,11 +338,12 @@ fn test_symbols_route_to_independent_books() {
         1,
         TimeInForce::Gtc,
     )));
+    assert_accepted(&event_rx);
 
     match recv_event(&event_rx) {
-        EngineEvent::Matched(trades) => {
+        EngineEvent::Matched { trades, .. } => {
             assert_eq!(trades.len(), 1);
-            assert_eq!(trades[0].symbol.base_asset, "ETH");
+            assert_eq!(trades[0].symbol.base_asset, "ETH".into());
         }
         other => panic!("unexpected event: {:?}", other),
     }

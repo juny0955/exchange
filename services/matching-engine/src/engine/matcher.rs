@@ -65,19 +65,26 @@ impl Matcher {
             trades.push(trade);
 
             if taker.is_fully_filled() {
-                return vec![EngineEvent::Matched(trades)];
+                return vec![EngineEvent::Matched {
+                    symbol: taker.symbol,
+                    trades,
+                }];
             }
         }
 
         let mut events = Vec::new();
         if !trades.is_empty() {
-            events.push(EngineEvent::Matched(trades));
+            events.push(EngineEvent::Matched {
+                symbol: taker.symbol.clone(),
+                trades,
+            });
         }
 
         if resting {
             book.add(taker);
         } else {
             events.push(EngineEvent::Canceled {
+                symbol: taker.symbol,
                 order_id: taker.order_id,
                 account_id: taker.account_id,
                 reason: CancelReason::IocExpired,
@@ -98,6 +105,7 @@ impl Matcher {
 
         if !book.can_fully_fill(order.side, price, required) {
             return vec![EngineEvent::Canceled {
+                symbol: order.symbol,
                 order_id: order.order_id,
                 account_id: order.account_id,
                 reason: CancelReason::FokExpired,
@@ -118,6 +126,7 @@ impl Matcher {
 
         if !book.can_fully_fill_quote(required_quote) {
             return vec![EngineEvent::Canceled {
+                symbol: order.symbol,
                 order_id: order.order_id,
                 account_id: order.account_id,
                 reason: CancelReason::FokExpired,
@@ -144,7 +153,10 @@ impl Matcher {
             trades.push(Self::make_trade(&taker, maker, fill_qty, fill_quote));
         }
 
-        vec![EngineEvent::Matched(trades)]
+        vec![EngineEvent::Matched {
+            symbol: taker.symbol,
+            trades,
+        }]
     }
 
     /// 시장가 매도(FOK) 전용
@@ -156,6 +168,7 @@ impl Matcher {
 
         if !book.can_fully_fill(order.side, Price::zero(), required) {
             return vec![EngineEvent::Canceled {
+                symbol: order.symbol,
                 order_id: order.order_id,
                 account_id: order.account_id,
                 reason: CancelReason::FokExpired,
@@ -236,6 +249,7 @@ impl Matcher {
 
     fn invalid_order_kind(order: &Order) -> Vec<EngineEvent> {
         vec![EngineEvent::Rejected {
+            symbol: order.symbol.clone(),
             order_id: order.order_id,
             account_id: order.account_id,
             reason: EngineError::InvalidOrderKind,
@@ -306,7 +320,7 @@ mod tests {
         events
             .into_iter()
             .find_map(|e| match e {
-                EngineEvent::Matched(trades) => Some(trades),
+                EngineEvent::Matched { trades, .. } => Some(trades),
                 _ => None,
             })
             .unwrap_or_default()
@@ -403,7 +417,11 @@ mod tests {
         let events =
             Matcher::match_order(limit_order(Side::Buy, 100, 5, TimeInForce::Ioc), &mut book);
 
-        assert!(events.iter().any(|e| matches!(e, EngineEvent::Matched(_))));
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, EngineEvent::Matched { .. }))
+        );
         assert!(matches!(
             cancel_reason(&events),
             Some(CancelReason::IocExpired)
@@ -420,7 +438,11 @@ mod tests {
         let events =
             Matcher::match_order(limit_order(Side::Sell, 100, 5, TimeInForce::Ioc), &mut book);
 
-        assert!(events.iter().any(|e| matches!(e, EngineEvent::Matched(_))));
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, EngineEvent::Matched { .. }))
+        );
         assert!(matches!(
             cancel_reason(&events),
             Some(CancelReason::IocExpired)
@@ -620,7 +642,10 @@ mod tests {
         let trades = matched_trades(events);
         assert_eq!(trades.len(), 1);
         assert_eq!(trades[0].quote_qty, QuoteQty::new(Decimal::from(100)));
-        assert_eq!(book.best_ask().unwrap().filled_quote_qty, QuoteQty::new(Decimal::from(100)));
+        assert_eq!(
+            book.best_ask().unwrap().filled_quote_qty,
+            QuoteQty::new(Decimal::from(100))
+        );
     }
 
     // 시장가 매수는 여러 호가로 나뉘어 체결된다
