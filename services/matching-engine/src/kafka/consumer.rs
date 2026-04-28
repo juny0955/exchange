@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::engine::EngineManager;
 use crate::kafka::config::KafkaConfig;
-use crate::kafka::dto::{CancelOrderDto, PlaceOrderDto};
+use crate::kafka::consume_dto::{CancelOrderDto, PlaceOrderDto};
 use crate::kafka::error::KafkaConsumerError;
 use rdkafka::consumer::{BaseConsumer, CommitMode, Consumer};
 use rdkafka::{ClientConfig, Message};

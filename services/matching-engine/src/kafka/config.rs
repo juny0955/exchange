@@ -1,12 +1,19 @@
 use crate::kafka::error::KafkaConsumerError;
 use std::time::Duration;
 
+#[derive(Debug, Clone)]
 pub struct KafkaConfig {
     pub bootstrap_servers: String,
     pub group_id: String,
     pub place_topic: String,
     pub cancel_topic: String,
     pub poll_timeout: Duration,
+
+    // producer
+    pub accepted_topic: String,
+    pub cancelled_topic: String,
+    pub rejected_topic: String,
+    pub matched_topic: String,
 }
 
 impl KafkaConfig {
@@ -18,6 +25,10 @@ impl KafkaConfig {
             place_topic: "order.PLACE_ORDER".to_string(),
             cancel_topic: "order.CANCEL_ORDER".to_string(),
             poll_timeout: Duration::from_millis(100),
+            accepted_topic: "engine.ACCEPTED".to_string(),
+            cancelled_topic: "engine.CANCELED".to_string(),
+            rejected_topic: "engine.REJECTED".to_string(),
+            matched_topic: "engine.MATCHED".to_string(),
         })
     }
 }
