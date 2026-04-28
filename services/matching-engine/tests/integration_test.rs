@@ -326,7 +326,7 @@ fn test_symbols_route_to_independent_books() {
     match recv_event(&event_rx) {
         EngineEvent::Matched { trades, .. } => {
             assert_eq!(trades.len(), 1);
-            assert_eq!(trades[0].symbol.base_asset, "BTC");
+            assert_eq!(trades[0].symbol.base_asset, "BTC".into());
         }
         other => panic!("unexpected event: {:?}", other),
     }
@@ -343,7 +343,7 @@ fn test_symbols_route_to_independent_books() {
     match recv_event(&event_rx) {
         EngineEvent::Matched { trades, .. } => {
             assert_eq!(trades.len(), 1);
-            assert_eq!(trades[0].symbol.base_asset, "ETH");
+            assert_eq!(trades[0].symbol.base_asset, "ETH".into());
         }
         other => panic!("unexpected event: {:?}", other),
     }

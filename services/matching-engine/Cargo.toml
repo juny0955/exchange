@@ -10,10 +10,14 @@ rust_decimal = { version = "1.41.0", features = ["serde"] }
 thiserror = "2.0.18"
 crossbeam = "0.8.4"
 derive_more = { version = "2.1.1", features = ["full"] }
-rdkafka = {  version = "0.39.0", features = ["cmake-build"] }
-serde = { version = "1.0.228", features = ["derive"] }
+rdkafka = { version = "0.39.0", features = ["cmake-build"] }
+serde = { version = "1.0.228", features = ["derive", "rc"] }
 serde_json = "1.0.149"
 ctrlc = "3.5.2"
 tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json", "fmt"] }
+tracing-subscriber = { version = "0.3.23", features = [
+    "env-filter",
+    "json",
+    "fmt",
+] }
 chrono = { version = "0.4.44", features = ["serde"] }
