@@ -1,3 +1,12 @@
 spring:
   application:
     name: account-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:25432/account_db
+    driver-class-name: org.postgresql.Driver
+    username: exchange
+    password: exchange
+
+  jooq:
+    sql-dialect: POSTGRES

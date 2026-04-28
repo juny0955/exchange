@@ -2,6 +2,7 @@ name: exchange
 
 include:
   - services/order-service/docker-compose.yml
+  - services/account-service/docker-compose.yml
 
 services:
   kafka:

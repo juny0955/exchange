@@ -59,7 +59,7 @@ jooq {
             }
 
             target {
-                packageName = "dev.junyoung.exchange.orderservice"
+                packageName = "dev.junyoung.exchange.accountservice"
                 directory = jooqGeneratedDir.get().asFile.absolutePath
             }
         }
