@@ -18,7 +18,7 @@ public class JooqBalanceRepository implements BalanceRepository {
     private final DSLContext dslContext;
 
     @Override
-    public Optional<Balance> findByAccountIdAndAssetCode(AccountId accountId, AssetCode assetCode) {
+    public Optional<Balance> findByAccountIdAndAssetCodeForUpdate(AccountId accountId, AssetCode assetCode) {
         return Optional.ofNullable(
             dslContext.selectFrom(Tables.BALANCES)
                 .where(Tables.BALANCES.ACCOUNT_ID.eq(accountId.value()))

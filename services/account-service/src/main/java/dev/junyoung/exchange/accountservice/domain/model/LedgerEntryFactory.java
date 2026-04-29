@@ -20,24 +20,15 @@ public final class LedgerEntryFactory {
         OrderId orderId
     ) {
         return List.of(
-            LedgerEntry.create(
-                accountId,
-                assetCode,
-                amount,
-                BalanceType.AVAILABLE,
-                EntryType.DEBIT,
-                ReferenceType.ORDER,
-                orderId.value()
-            ),
-            LedgerEntry.create(
-                accountId,
-                assetCode,
-                amount,
-                BalanceType.HELD,
-                EntryType.CREDIT,
-                ReferenceType.ORDER,
-                orderId.value()
-            )
+            LedgerEntry.create(accountId, assetCode, amount, BalanceType.AVAILABLE, EntryType.DEBIT,    ReferenceType.ORDER, orderId.value()),
+            LedgerEntry.create(accountId, assetCode, amount, BalanceType.HELD,      EntryType.CREDIT,   ReferenceType.ORDER, orderId.value())
+        );
+    }
+
+    public static List<LedgerEntry> createForRelease(AccountId accountId, AssetCode assetCode, BigDecimal amount, OrderId orderId) {
+        return List.of(
+            LedgerEntry.create(accountId, assetCode, amount, BalanceType.HELD,      EntryType.DEBIT,    ReferenceType.ORDER, orderId.value()),
+            LedgerEntry.create(accountId, assetCode, amount, BalanceType.AVAILABLE, EntryType.CREDIT,   ReferenceType.ORDER, orderId.value())
         );
     }
 }

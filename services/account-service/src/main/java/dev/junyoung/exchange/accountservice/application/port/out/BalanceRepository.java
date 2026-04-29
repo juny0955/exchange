@@ -7,7 +7,7 @@ import dev.junyoung.exchange.accountservice.domain.model.value.AssetCode;
 import java.util.Optional;
 
 public interface BalanceRepository {
-    Optional<Balance> findByAccountIdAndAssetCode(AccountId accountId, AssetCode assetCode);
-
     void update(Balance balance);
+
+    Optional<Balance> findByAccountIdAndAssetCodeForUpdate(AccountId accountId, AssetCode assetCode);
 }

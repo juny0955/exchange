@@ -74,7 +74,7 @@ public class ReserveBalanceService implements ReserveBalanceUseCase {
      * @throws AccountStateConflictException 가용 잔고 부족 시
      */
     private void reserveBalance(AccountId accountId, AssetCode assetCode, BigDecimal amount) {
-        Balance balance = balanceRepository.findByAccountIdAndAssetCode(accountId, assetCode)
+        Balance balance = balanceRepository.findByAccountIdAndAssetCodeForUpdate(accountId, assetCode)
             .orElseThrow(BalanceNotFoundException::new);
 
         balance.reserve(amount);
