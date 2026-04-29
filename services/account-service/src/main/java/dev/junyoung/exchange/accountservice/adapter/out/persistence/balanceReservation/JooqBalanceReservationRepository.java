@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -33,6 +34,22 @@ public class JooqBalanceReservationRepository implements BalanceReservationRepos
             .where(Tables.BALANCE_RESERVATIONS.ORDER_ID.eq(reservation.getOrderId().value()))
             .and(Tables.BALANCE_RESERVATIONS.ACCOUNT_ID.eq(reservation.getAccountId().value()))
             .execute();
+    }
+
+    @Override
+    public void updateAll(List<BalanceReservation> reservations) {
+        if (reservations.isEmpty()) return;
+
+        var queries = reservations.stream()
+            .map(reservation -> dslContext.update(Tables.BALANCE_RESERVATIONS)
+                .set(Tables.BALANCE_RESERVATIONS.RELEASED_AMOUNT, reservation.getReleasedAmount())
+                .set(Tables.BALANCE_RESERVATIONS.STATUS, reservation.getStatus().name())
+                .set(Tables.BALANCE_RESERVATIONS.UPDATED_AT, reservation.getUpdatedAt())
+                .where(Tables.BALANCE_RESERVATIONS.ORDER_ID.eq(reservation.getOrderId().value()))
+                .and(Tables.BALANCE_RESERVATIONS.ACCOUNT_ID.eq(reservation.getAccountId().value())))
+            .toList();
+
+        dslContext.batch(queries).execute();
     }
 
     @Override

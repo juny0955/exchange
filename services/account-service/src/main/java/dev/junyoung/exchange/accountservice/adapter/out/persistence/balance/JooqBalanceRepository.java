@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -37,5 +38,22 @@ public class JooqBalanceRepository implements BalanceRepository {
             .where(Tables.BALANCES.ACCOUNT_ID.eq(balance.getAccountId().value()))
             .and(Tables.BALANCES.ASSET_CODE.eq(balance.getAssetCode().value()))
             .execute();
+    }
+
+    @Override
+    public void upsertAll(List<Balance> balances) {
+        if (balances.isEmpty()) return;
+
+        var queries = balances.stream()
+            .map(balance -> dslContext.insertInto(Tables.BALANCES)
+                .set(JooqBalanceMapper.toRecord(dslContext, balance))
+                .onConflict(Tables.BALANCES.ACCOUNT_ID, Tables.BALANCES.ASSET_CODE)
+                .doUpdate()
+                .set(Tables.BALANCES.AVAILABLE, balance.getAvailable())
+                .set(Tables.BALANCES.HELD, balance.getHeld())
+                .set(Tables.BALANCES.UPDATED_AT, balance.getUpdatedAt()))
+            .toList();
+
+        dslContext.batch(queries).execute();
     }
 }
