@@ -1,10 +1,15 @@
 package dev.junyoung.exchange.accountservice.adapter.in.event;
 
+import java.util.List;
+
 import dev.junyoung.exchange.accountservice.adapter.in.event.annotation.EngineRetryableTopic;
 import dev.junyoung.exchange.accountservice.adapter.in.event.message.EngineCanceledMessage;
+import dev.junyoung.exchange.accountservice.adapter.in.event.message.EngineMatchedMessage;
 import dev.junyoung.exchange.accountservice.adapter.in.event.message.EngineRejectedMessage;
 import dev.junyoung.exchange.accountservice.application.port.in.ReleaseBalanceUseCase;
+import dev.junyoung.exchange.accountservice.application.port.in.SettleBalanceUseCase;
 import dev.junyoung.exchange.accountservice.application.port.in.command.ReleaseBalanceCommand;
+import dev.junyoung.exchange.accountservice.application.port.in.command.SettleBalanceCommand;
 import dev.junyoung.exchange.accountservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.accountservice.domain.model.value.OrderId;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +28,7 @@ import tools.jackson.databind.ObjectMapper;
 public class EngineEventConsumer {
 
     private final ReleaseBalanceUseCase releaseBalanceUseCase;
+    private final SettleBalanceUseCase settleBalanceUseCase;
     private final ObjectMapper objectMapper;
 
     @KafkaListener(
@@ -51,8 +57,16 @@ public class EngineEventConsumer {
     )
     @EngineRetryableTopic
     public void consumeMatched(ConsumerRecord<String, String> record) {
-        // TODO: 구현 예정
-        log.info("MATCHED 이벤트 수신 (미구현): topic={}, partition={}, offset={}", record.value(), record.partition(), record.offset());
+        List<EngineMatchedMessage> messages = objectMapper.readValue(
+            record.value(),
+            objectMapper.getTypeFactory().constructCollectionType(List.class, EngineMatchedMessage.class)
+        );
+
+        List<SettleBalanceCommand> commands = messages.stream()
+            .map(EngineMatchedMessage::toCommand)
+            .toList();
+
+        commands.forEach(settleBalanceUseCase::settle);
     }
 
     @DltHandler
