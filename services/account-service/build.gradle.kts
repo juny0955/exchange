@@ -18,8 +18,8 @@ dependencies {
     implementation(project(":libs:core-web"))
     implementation(project(":libs:proto"))
     implementation("org.springframework.boot:spring-boot-starter-jooq")
-    implementation("org.springframework.grpc:spring-grpc-client-spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-kafka")
+    implementation("org.springframework.grpc:spring-grpc-server-spring-boot-starter")
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
