@@ -14,3 +14,19 @@ spring:
   grpc:
     server:
       port: 9090
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+
+kafka:
+  listeners:
+    engine:
+      group-id: account-engine-event-handler
+      topics:
+        matched: engine.MATCHED
+        canceled: engine.CANCELED
+        rejected: engine.REJECTED
