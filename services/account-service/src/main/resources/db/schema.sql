@@ -30,7 +30,7 @@ CREATE TABLE balances (
     CONSTRAINT chk_balances_held_non_negative CHECK (held >= 0)
 );
 
-CREATE TABLE balance_reservations (
+CREATE TABLE reservations (
     reservation_id  BIGSERIAL PRIMARY KEY,
     order_id        UUID NOT NULL,
     account_id      UUID NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE balance_reservations (
         FOREIGN KEY (account_id, asset_code) REFERENCES balances (account_id, asset_code),
 
     CONSTRAINT chk_balance_reservations_amount_positive CHECK (amount > 0),
-    CONSTRAINT chk_balance_reservations_released_valid CHECK ( released_amount > 0 AND released_amount <= amount )
+    CONSTRAINT chk_balance_reservations_released_valid CHECK (released_amount > 0 AND released_amount <= amount)
 );
 
 CREATE TABLE ledger_entries (

@@ -1,20 +1,33 @@
 package dev.junyoung.exchange.accountservice.application.service;
 
-import dev.junyoung.exchange.accountservice.application.exception.*;
-import dev.junyoung.exchange.accountservice.application.port.in.ReserveBalanceUseCase;
-import dev.junyoung.exchange.accountservice.application.port.in.command.ReserveBalanceCommand;
-import dev.junyoung.exchange.accountservice.application.port.out.*;
-import dev.junyoung.exchange.accountservice.domain.exception.AccountStateConflictException;
-import dev.junyoung.exchange.accountservice.domain.model.LedgerEntryFactory;
-import dev.junyoung.exchange.accountservice.domain.model.entity.*;
-import dev.junyoung.exchange.accountservice.domain.model.value.AccountId;
-import dev.junyoung.exchange.accountservice.domain.model.value.AssetCode;
-import lombok.RequiredArgsConstructor;
+import java.math.BigDecimal;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.List;
+import dev.junyoung.exchange.accountservice.application.exception.AccountInactiveException;
+import dev.junyoung.exchange.accountservice.application.exception.AccountNotFoundException;
+import dev.junyoung.exchange.accountservice.application.exception.AssetInactiveException;
+import dev.junyoung.exchange.accountservice.application.exception.AssetNotFoundException;
+import dev.junyoung.exchange.accountservice.application.exception.BalanceNotFoundException;
+import dev.junyoung.exchange.accountservice.application.port.in.ReserveBalanceUseCase;
+import dev.junyoung.exchange.accountservice.application.port.in.command.ReserveBalanceCommand;
+import dev.junyoung.exchange.accountservice.application.port.out.AccountRepository;
+import dev.junyoung.exchange.accountservice.application.port.out.AssetRepository;
+import dev.junyoung.exchange.accountservice.application.port.out.BalanceRepository;
+import dev.junyoung.exchange.accountservice.application.port.out.LedgerEntryRepository;
+import dev.junyoung.exchange.accountservice.application.port.out.ReservationRepository;
+import dev.junyoung.exchange.accountservice.domain.exception.AccountStateConflictException;
+import dev.junyoung.exchange.accountservice.domain.model.LedgerEntryFactory;
+import dev.junyoung.exchange.accountservice.domain.model.entity.Account;
+import dev.junyoung.exchange.accountservice.domain.model.entity.Asset;
+import dev.junyoung.exchange.accountservice.domain.model.entity.Balance;
+import dev.junyoung.exchange.accountservice.domain.model.entity.LedgerEntry;
+import dev.junyoung.exchange.accountservice.domain.model.entity.Reservation;
+import dev.junyoung.exchange.accountservice.domain.model.value.AccountId;
+import dev.junyoung.exchange.accountservice.domain.model.value.AssetCode;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Transactional
@@ -24,7 +37,7 @@ public class ReserveBalanceService implements ReserveBalanceUseCase {
     private final AccountRepository accountRepository;
     private final AssetRepository assetRepository;
     private final BalanceRepository balanceRepository;
-    private final BalanceReservationRepository balanceReservationRepository;
+    private final ReservationRepository reservationRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
 
     @Override
@@ -86,14 +99,14 @@ public class ReserveBalanceService implements ReserveBalanceUseCase {
      * @param command 예약 커맨드
      */
     private void saveBalanceReservation(ReserveBalanceCommand command) {
-        BalanceReservation balanceReservation = BalanceReservation.create(
+        Reservation reservation = Reservation.create(
             command.orderId(),
             command.accountId(),
             command.assetCode(),
             command.amount()
         );
 
-        balanceReservationRepository.save(balanceReservation);
+        reservationRepository.save(reservation);
     }
 
     /**

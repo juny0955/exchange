@@ -1,19 +1,20 @@
-package dev.junyoung.exchange.accountservice.adapter.out.persistence.balanceReservation;
+package dev.junyoung.exchange.accountservice.adapter.out.persistence.reservation;
+
+import org.jooq.DSLContext;
 
 import dev.junyoung.exchange.accountservice.Tables;
-import dev.junyoung.exchange.accountservice.domain.model.entity.BalanceReservation;
+import dev.junyoung.exchange.accountservice.domain.model.entity.Reservation;
 import dev.junyoung.exchange.accountservice.domain.model.enums.ReservationStatus;
 import dev.junyoung.exchange.accountservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.accountservice.domain.model.value.AssetCode;
 import dev.junyoung.exchange.accountservice.domain.model.value.OrderId;
 import dev.junyoung.exchange.accountservice.domain.model.value.ReservationId;
-import dev.junyoung.exchange.accountservice.tables.records.BalanceReservationsRecord;
-import org.jooq.DSLContext;
+import dev.junyoung.exchange.accountservice.tables.records.ReservationsRecord;
 
-final class JooqBalanceReservationMapper {
+final class JooqReservationMapper {
 
-    static BalanceReservationsRecord toRecord(DSLContext dslContext, BalanceReservation reservation) {
-        BalanceReservationsRecord record = dslContext.newRecord(Tables.BALANCE_RESERVATIONS);
+    static ReservationsRecord toRecord(DSLContext dslContext, Reservation reservation) {
+        ReservationsRecord record = dslContext.newRecord(Tables.RESERVATIONS);
         record.setOrderId(reservation.getOrderId().value());
         record.setAccountId(reservation.getAccountId().value());
         record.setAssetCode(reservation.getAssetCode().value());
@@ -25,8 +26,8 @@ final class JooqBalanceReservationMapper {
         return record;
     }
 
-    static BalanceReservation toDomain(BalanceReservationsRecord record) {
-        return new BalanceReservation(
+    static Reservation toDomain(ReservationsRecord record) {
+        return new Reservation(
             new ReservationId(record.getReservationId()),
             new OrderId(record.getOrderId()),
             new AccountId(record.getAccountId()),

@@ -1,5 +1,8 @@
 package dev.junyoung.exchange.accountservice.domain.model.entity;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+
 import dev.junyoung.exchange.accountservice.domain.exception.AccountInvalidException;
 import dev.junyoung.exchange.accountservice.domain.exception.AccountStateConflictException;
 import dev.junyoung.exchange.accountservice.domain.model.enums.ReservationStatus;
@@ -10,12 +13,9 @@ import dev.junyoung.exchange.accountservice.domain.model.value.ReservationId;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-
 @Getter
 @AllArgsConstructor
-public class BalanceReservation {
+public class Reservation {
     private final ReservationId reservationId;
     private final OrderId orderId;
     private final AccountId accountId;
@@ -26,7 +26,7 @@ public class BalanceReservation {
     private final Instant createdAt;
     private Instant updatedAt;
 
-    public static BalanceReservation create(
+    public static Reservation create(
         OrderId orderId,
         AccountId accountId,
         AssetCode assetCode,
@@ -35,7 +35,7 @@ public class BalanceReservation {
         if (amount == null || amount.signum() <= 0)
             throw new AccountInvalidException("예약 금액은 0보다 커야 합니다.");
         Instant now = Instant.now();
-        return new BalanceReservation(null, orderId, accountId, assetCode, amount, BigDecimal.ZERO, ReservationStatus.ACTIVE, now, now);
+        return new Reservation(null, orderId, accountId, assetCode, amount, BigDecimal.ZERO, ReservationStatus.ACTIVE, now, now);
     }
 
     public void release(BigDecimal releaseAmount) {

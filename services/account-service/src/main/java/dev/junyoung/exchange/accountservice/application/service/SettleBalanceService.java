@@ -1,21 +1,22 @@
 package dev.junyoung.exchange.accountservice.application.service;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import dev.junyoung.exchange.accountservice.application.exception.BalanceNotFoundException;
 import dev.junyoung.exchange.accountservice.application.exception.ReservationNotFoundException;
 import dev.junyoung.exchange.accountservice.application.port.in.SettleBalanceUseCase;
 import dev.junyoung.exchange.accountservice.application.port.in.command.SettleBalanceCommand;
 import dev.junyoung.exchange.accountservice.application.port.out.BalanceRepository;
-import dev.junyoung.exchange.accountservice.application.port.out.BalanceReservationRepository;
 import dev.junyoung.exchange.accountservice.application.port.out.LedgerEntryRepository;
+import dev.junyoung.exchange.accountservice.application.port.out.ReservationRepository;
 import dev.junyoung.exchange.accountservice.domain.model.LedgerEntryFactory;
 import dev.junyoung.exchange.accountservice.domain.model.entity.Balance;
-import dev.junyoung.exchange.accountservice.domain.model.entity.BalanceReservation;
+import dev.junyoung.exchange.accountservice.domain.model.entity.Reservation;
 import dev.junyoung.exchange.accountservice.domain.model.value.AssetCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,14 +24,14 @@ import java.util.List;
 public class SettleBalanceService implements SettleBalanceUseCase {
 
     private final BalanceRepository balanceRepository;
-    private final BalanceReservationRepository balanceReservationRepository;
+    private final ReservationRepository reservationRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
 
     @Override
     public void settle(SettleBalanceCommand command) {
-        BalanceReservation buyerReservation = balanceReservationRepository.findByOrderIdAndAccountIdForUpdate(command.buyOrderId(), command.buyAccountId())
+        Reservation buyerReservation = reservationRepository.findByOrderIdAndAccountIdForUpdate(command.buyOrderId(), command.buyAccountId())
             .orElseThrow(ReservationNotFoundException::new);
-        BalanceReservation sellerReservation = balanceReservationRepository.findByOrderIdAndAccountIdForUpdate(command.sellOrderId(), command.sellAccountId())
+        Reservation sellerReservation = reservationRepository.findByOrderIdAndAccountIdForUpdate(command.sellOrderId(), command.sellAccountId())
             .orElseThrow(ReservationNotFoundException::new);
 
         buyerReservation.release(command.quoteQty());
@@ -39,7 +40,7 @@ public class SettleBalanceService implements SettleBalanceUseCase {
         AssetCode quoteAsset = buyerReservation.getAssetCode();
         AssetCode baseAsset = sellerReservation.getAssetCode();
 
-        balanceReservationRepository.updateAll(List.of(buyerReservation, sellerReservation));
+        reservationRepository.updateAll(List.of(buyerReservation, sellerReservation));
 
         settleBalance(command, quoteAsset, baseAsset);
 
