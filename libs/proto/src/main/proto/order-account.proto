@@ -7,7 +7,6 @@ option java_multiple_files = true;
 
 service AccountReservationService {
   rpc Reserve(ReserveRequest) returns (ReserveResponse);
-  rpc Release(ReleaseRequest) returns (ReleaseResponse);
 }
 
 message ReserveRequest {
@@ -18,10 +17,3 @@ message ReserveRequest {
 }
 
 message ReserveResponse {}
-
-message ReleaseRequest {
-  string account_id = 1;
-  string order_id = 2;
-}
-
-message ReleaseResponse {}

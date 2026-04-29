@@ -31,9 +31,4 @@ public class AccountReservationService extends AccountReservationServiceGrpc.Acc
         responseObserver.onNext(ReserveResponse.getDefaultInstance());
         responseObserver.onCompleted();
     }
-
-    @Override
-    public void release(ReleaseRequest request, StreamObserver<ReleaseResponse> responseObserver) {
-        super.release(request, responseObserver);
-    }
 }
