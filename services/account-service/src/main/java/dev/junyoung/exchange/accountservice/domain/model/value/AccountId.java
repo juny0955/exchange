@@ -12,4 +12,8 @@ public record AccountId(UUID value) {
     public static AccountId newId() {
         return new AccountId(UUID.randomUUID());
     }
+
+    public static AccountId from(String raw) {
+        return new AccountId(UUID.fromString(raw));
+    }
 }

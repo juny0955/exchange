@@ -8,4 +8,8 @@ public record AssetCode(String value) {
         if (value.length() > 8) throw new AccountInvalidException("자산 코드는 8자 이하여야 합니다.");
         value = value.toUpperCase();
     }
+
+    public static AssetCode from(String raw) {
+        return new AssetCode(raw);
+    }
 }

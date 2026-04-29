@@ -8,4 +8,8 @@ public record OrderId(UUID value) {
     public OrderId {
         if (value == null) throw new AccountInvalidException("주문 ID는 필수입니다.");
     }
+
+    public static OrderId from(String raw) {
+        return new OrderId(UUID.fromString(raw));
+    }
 }
