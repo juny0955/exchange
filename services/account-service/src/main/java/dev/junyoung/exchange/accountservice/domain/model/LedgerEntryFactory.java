@@ -17,8 +17,8 @@ public final class LedgerEntryFactory {
         AccountId accountId,
         AssetCode assetCode,
         BigDecimal amount,
-        OrderId orderId) {
-
+        OrderId orderId
+    ) {
         return List.of(
             LedgerEntry.create(
                 accountId,
