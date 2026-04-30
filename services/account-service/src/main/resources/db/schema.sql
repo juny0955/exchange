@@ -47,7 +47,7 @@ CREATE TABLE reservations (
         FOREIGN KEY (account_id, asset_code) REFERENCES balances (account_id, asset_code),
 
     CONSTRAINT chk_balance_reservations_amount_positive CHECK (amount > 0),
-    CONSTRAINT chk_balance_reservations_released_valid CHECK (released_amount > 0 AND released_amount <= amount)
+    CONSTRAINT chk_balance_reservations_released_valid CHECK (released_amount >= 0 AND released_amount <= amount)
 );
 
 CREATE TABLE ledger_entries (
