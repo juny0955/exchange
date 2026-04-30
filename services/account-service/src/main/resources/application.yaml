@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: account-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:25432/account_db
+    driver-class-name: org.postgresql.Driver
+    username: exchange
+    password: exchange
+
+  jooq:
+    sql-dialect: POSTGRES
+
+  grpc:
+    server:
+      port: 9090
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+
+kafka:
+  listeners:
+    engine:
+      group-id: account-engine-event-handler
+      topics:
+        matched: engine.MATCHED
+        canceled: engine.CANCELED
+        rejected: engine.REJECTED

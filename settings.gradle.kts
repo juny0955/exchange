@@ -5,3 +5,4 @@ include("libs:core-web")
 include("libs:proto")
 
 include("services:order-service")
+include("services:account-service")

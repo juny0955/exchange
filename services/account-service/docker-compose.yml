@@ -1,0 +1,30 @@
+services:
+  account-postgres:
+    image: postgres:16
+    container_name: account-postgres
+    restart: always
+    ports:
+      - "25432:5432"
+    environment:
+      POSTGRES_DB: account_db
+      POSTGRES_USER: exchange
+      POSTGRES_PASSWORD: exchange
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - ./src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - account-postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U exchange -d account_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - account-internal
+
+volumes:
+  account-postgres_data:
+
+networks:
+  account-internal:
+    driver: bridge
