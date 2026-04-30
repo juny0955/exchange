@@ -7,8 +7,10 @@ import dev.junyoung.exchange.accountservice.adapter.in.event.message.EngineCance
 import dev.junyoung.exchange.accountservice.adapter.in.event.message.EngineMatchedMessage;
 import dev.junyoung.exchange.accountservice.adapter.in.event.message.EngineRejectedMessage;
 import dev.junyoung.exchange.accountservice.application.port.in.ReleaseBalanceUseCase;
+import dev.junyoung.exchange.accountservice.application.port.in.SaveEngineFailedEventUseCase;
 import dev.junyoung.exchange.accountservice.application.port.in.SettleBalanceUseCase;
 import dev.junyoung.exchange.accountservice.application.port.in.command.ReleaseBalanceCommand;
+import dev.junyoung.exchange.accountservice.application.port.in.command.SaveEngineFailedEventCommand;
 import dev.junyoung.exchange.accountservice.application.port.in.command.SettleBalanceCommand;
 import dev.junyoung.exchange.accountservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.accountservice.domain.model.value.OrderId;
@@ -30,6 +32,8 @@ public class EngineEventConsumer {
     private final ReleaseBalanceUseCase releaseBalanceUseCase;
     private final SettleBalanceUseCase settleBalanceUseCase;
     private final ObjectMapper objectMapper;
+
+    private final SaveEngineFailedEventUseCase saveEngineFailedEventUseCase;
 
     @KafkaListener(
         topics = "${kafka.listeners.engine.topics.canceled}",
@@ -70,8 +74,17 @@ public class EngineEventConsumer {
     }
 
     @DltHandler
-    public void handleDlt(ConsumerRecord<String, String> record, @Header(KafkaHeaders.EXCEPTION_MESSAGE) String errorMessage) {
-        log.error("엔진 이벤트 최종 처리 실패 topic={}, partition={}, offset={}, error={}, payload={}",
-            record.topic(), record.partition(), record.offset(), errorMessage, record.value());
+    public void handleDlt(
+        ConsumerRecord<String, String> record,
+        @Header(KafkaHeaders.EXCEPTION_MESSAGE) String errorMessage
+    ) {
+        log.error("엔진 이벤트 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", record.topic(), record.partition(), record.offset(), errorMessage, record.value());
+
+        try {
+            SaveEngineFailedEventCommand command = new SaveEngineFailedEventCommand(record.topic(), record.partition(), record.offset(), record.value(), errorMessage);
+            saveEngineFailedEventUseCase.save(command);
+        } catch (Exception e) {
+            log.error("엔진 이벤트 DLT 영속 실패", e);
+        }
     }
 }
