@@ -9,6 +9,7 @@ import dev.junyoung.exchange.accountservice.domain.model.LedgerEntryFactory;
 import dev.junyoung.exchange.accountservice.domain.model.entity.Balance;
 import dev.junyoung.exchange.accountservice.domain.model.entity.LedgerEntry;
 import dev.junyoung.exchange.accountservice.domain.model.entity.Reservation;
+import dev.junyoung.exchange.accountservice.domain.model.enums.ReferenceType;
 import dev.junyoung.exchange.accountservice.domain.model.value.AssetCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,9 @@ public class SettleBalanceService implements SettleBalanceUseCase {
     @Override
     public void settle(List<SettleBalanceCommand> commands) {
         if (commands.isEmpty()) return;
+
+        if (ledgerEntryRepository.existsByReferenceTypeAndReferenceId(ReferenceType.TRADE, commands.getFirst().tradeId().value()))
+            return;
 
         Map<ReservationLockKey, Reservation> reservations = loadReservations(commands);
         Map<BalanceLockKey, Balance> balances = loadBalances(commands, reservations);
