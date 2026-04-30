@@ -12,4 +12,6 @@ public interface BalanceRepository {
     void upsertAll(List<Balance> balances);
 
     Optional<Balance> findByAccountIdAndAssetCodeForUpdate(AccountId accountId, AssetCode assetCode);
+
+    List<Balance> findAllByLockKeyForUpdate(List<BalanceLockKey> keys);
 }

@@ -1,12 +1,14 @@
 package dev.junyoung.exchange.accountservice.adapter.out.persistence.reservation;
 
 import dev.junyoung.exchange.accountservice.Tables;
+import dev.junyoung.exchange.accountservice.application.port.out.ReservationLockKey;
 import dev.junyoung.exchange.accountservice.application.port.out.ReservationRepository;
 import dev.junyoung.exchange.accountservice.domain.model.entity.Reservation;
 import dev.junyoung.exchange.accountservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.accountservice.domain.model.value.OrderId;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -61,5 +63,20 @@ public class JooqReservationRepository implements ReservationRepository {
                 .forUpdate()
                 .fetchOne(JooqReservationMapper::toDomain)
         );
+    }
+
+    @Override
+    public List<Reservation> findAllByLockKeyForUpdate(List<ReservationLockKey> keys) {
+        if (keys.isEmpty()) return List.of();
+
+        var rows = keys.stream()
+            .map(k -> DSL.row(k.orderId().value(), k.accountId().value()))
+            .toList();
+
+        return dslContext.selectFrom(Tables.RESERVATIONS)
+            .where(DSL.row(Tables.RESERVATIONS.ORDER_ID, Tables.RESERVATIONS.ACCOUNT_ID).in(rows))
+            .orderBy(Tables.RESERVATIONS.ORDER_ID.asc())
+            .forUpdate()
+            .fetch(JooqReservationMapper::toDomain);
     }
 }

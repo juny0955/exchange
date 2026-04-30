@@ -1,12 +1,14 @@
 package dev.junyoung.exchange.accountservice.adapter.out.persistence.balance;
 
 import dev.junyoung.exchange.accountservice.Tables;
+import dev.junyoung.exchange.accountservice.application.port.out.BalanceLockKey;
 import dev.junyoung.exchange.accountservice.application.port.out.BalanceRepository;
 import dev.junyoung.exchange.accountservice.domain.model.entity.Balance;
 import dev.junyoung.exchange.accountservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.accountservice.domain.model.value.AssetCode;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -55,5 +57,23 @@ public class JooqBalanceRepository implements BalanceRepository {
             .toList();
 
         dslContext.batch(queries).execute();
+    }
+
+    @Override
+    public List<Balance> findAllByLockKeyForUpdate(List<BalanceLockKey> keys) {
+        if (keys.isEmpty()) return List.of();
+
+        var rows = keys.stream()
+            .map(k -> DSL.row(k.accountId().value(), k.assetCode().value()))
+            .toList();
+
+        return dslContext.selectFrom(Tables.BALANCES)
+            .where(DSL.row(Tables.BALANCES.ACCOUNT_ID, Tables.BALANCES.ASSET_CODE).in(rows))
+            .orderBy(
+                Tables.BALANCES.ACCOUNT_ID.asc(),
+                Tables.BALANCES.ASSET_CODE.asc()
+            )
+            .forUpdate()
+            .fetch(JooqBalanceMapper::toDomain);
     }
 }

@@ -66,7 +66,7 @@ public class EngineEventConsumer {
             .map(EngineMatchedMessage::toCommand)
             .toList();
 
-        commands.forEach(settleBalanceUseCase::settle);
+        settleBalanceUseCase.settle(commands);
     }
 
     @DltHandler

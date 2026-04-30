@@ -2,6 +2,8 @@ package dev.junyoung.exchange.accountservice.application.port.in;
 
 import dev.junyoung.exchange.accountservice.application.port.in.command.SettleBalanceCommand;
 
+import java.util.List;
+
 public interface SettleBalanceUseCase {
-    void settle(SettleBalanceCommand command);
+    void settle(List<SettleBalanceCommand> commands);
 }
