@@ -16,10 +16,12 @@ import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class AccountReservedEventHandler implements HandleAccountReservedEvent {
 
 	private final OrderRepository orderRepository;
@@ -34,14 +36,23 @@ public class AccountReservedEventHandler implements HandleAccountReservedEvent {
 
 		OrderStatus fromStatus = order.getStatus();
 
-		// 이미 RESERVE 상태일시 no-op 처리
-		if (fromStatus.equals(OrderStatus.RESERVED))
+		// PENDING 상태 제외 모두 no-op 처리
+		if (fromStatus.equals(OrderStatus.PENDING)) {
+			order.reserved();
+
+			orderRepository.updateStatus(order);
+			orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.ACCOUNT_RESERVED));
+			orderOutboxRepository.save(orderOutboxFactory.placeOrder(order));
 			return;
+		}
 
-		order.reserved();
+		if (fromStatus.equals(OrderStatus.REJECTED)) {
+			log.warn("[ACCOUNT_RESERVED: ignored] 이미 거부된 주문입니다. orderId={}, accountId={}",
+				orderId.value(), accountId.value());
+			return;
+		}
 
-		orderRepository.updateStatus(order);
-		orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.ACCOUNT_RESERVED));
-		orderOutboxRepository.save(orderOutboxFactory.placeOrder(order));
+		log.debug("[ACCOUNT_RESERVED: duplicate] 이미 예약 완료 이후 상태입니다. orderId={}, accountId={}, status={}",
+			orderId.value(), accountId.value(), fromStatus);
 	}
 }
