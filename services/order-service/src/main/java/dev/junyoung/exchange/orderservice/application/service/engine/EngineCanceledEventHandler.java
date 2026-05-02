@@ -32,6 +32,8 @@ public class EngineCanceledEventHandler implements HandleEngineCanceledEventUseC
 			.orElseThrow(OrderNotFoundException::new);
 
 		OrderStatus fromStatus = order.getStatus();
+
+		// CANCEL_PENDING 상태 제외 모두 no-op 처리
 		if (order.isCancelPendingStatus()) {
 			order.cancel();
 

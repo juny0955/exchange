@@ -33,6 +33,7 @@ public class EngineRejectedEventHandler implements HandleEngineRejectedEventUseC
 
 		OrderStatus fromStatus = order.getStatus();
 
+		// RESERVED 상태 제외 모두 no-op 처리
 		if (fromStatus.equals(OrderStatus.RESERVED)) {
 			order.reject();
 
