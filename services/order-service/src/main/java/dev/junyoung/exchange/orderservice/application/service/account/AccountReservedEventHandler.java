@@ -1,4 +1,4 @@
-package dev.junyoung.exchange.orderservice.application.account;
+package dev.junyoung.exchange.orderservice.application.service.account;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
