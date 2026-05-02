@@ -42,11 +42,12 @@ public class EngineRejectedEventHandler implements HandleEngineRejectedEventUseC
 		}
 
 		if (fromStatus.equals(OrderStatus.REJECTED)) {
-			log.debug("[ACCOUNT_RESERVED: duplicate] 이미 거부된 주문입니다. orderId={}, accountId={}",
+			log.debug("[ENGINE_REJECTED: duplicate] 이미 거부된 주문입니다. orderId={}, accountId={}",
 				orderId.value(), accountId.value());
+			return;
 		}
 
-		log.warn("[ACCOUNT_RESERVED: ignored] 거부할 수 없는 상태입니다. orderId={}, accountId={}, status={}, reason={}",
+		log.warn("[ENGINE_REJECTED: ignored] 거부할 수 없는 상태입니다. orderId={}, accountId={}, status={}, reason={}",
 			orderId.value(), accountId.value(), fromStatus, reason);
 	}
 }
