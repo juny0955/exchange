@@ -11,12 +11,15 @@ import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class EngineAcceptedEventHandler implements HandleEngineAcceptedEventUseCase {
 
 	private final OrderRepository orderRepository;
@@ -29,12 +32,23 @@ public class EngineAcceptedEventHandler implements HandleEngineAcceptedEventUseC
 
 		OrderStatus fromStatus = order.getStatus();
 
-		// 취소 대기 상태일시 상태 변경 하지않고 이력만 남김
-		if (!order.isCancelPendingStatus()) {
+		if (fromStatus.equals(OrderStatus.RESERVED)) {
 			order.accepted();
+
 			orderRepository.updateStatus(order);
+			orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.ENGINE_ACCEPTED));
+			return;
 		}
 
-		orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.ENGINE_ACCEPTED));
+		if (fromStatus.equals(OrderStatus.NEW)
+			|| fromStatus.equals(OrderStatus.PARTIALLY_FILLED)
+			|| order.isCancelPendingStatus()) {
+			log.debug("[ENGINE_ACCEPTED: duplicate] 이미 예약 이후 단계로 진입한 주문입니다. orderId={}, accountId={}, status={}",
+				orderId.value(), accountId.value(), fromStatus);
+			return;
+		}
+
+		log.warn("[ENGINE_ACCEPTED: ignored] 활성화할 수 없는 상태입니다. orderId={}, accountId={}, status={}",
+			orderId.value(), accountId.value(), fromStatus);
 	}
 }
