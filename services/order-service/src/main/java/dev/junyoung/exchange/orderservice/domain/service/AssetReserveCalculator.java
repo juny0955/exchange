@@ -17,10 +17,7 @@ import dev.junyoung.exchange.orderservice.domain.service.dto.AssetReserveResult;
  * | MARKET    | BUY  | quoteAsset  | quoteQty          |
  * | MARKET    | SELL | baseAsset   | quantity          |
  * </pre>
- *
- * @deprecated 매칭엔진 인메모리 잔고 검증으로 사용 하지않음 제거예정
  */
-@Deprecated
 public final class AssetReserveCalculator {
 
 	/**

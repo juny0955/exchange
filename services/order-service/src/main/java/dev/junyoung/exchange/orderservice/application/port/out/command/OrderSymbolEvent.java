@@ -6,7 +6,7 @@ public record OrderSymbolEvent(
 	String baseAsset,
 	String quoteAsset
 ) {
-	public static OrderSymbolEvent of(Symbol symbol) {
+	public static OrderSymbolEvent from(Symbol symbol) {
 		return new OrderSymbolEvent(symbol.baseAsset(), symbol.quoteAsset());
 	}
 }
