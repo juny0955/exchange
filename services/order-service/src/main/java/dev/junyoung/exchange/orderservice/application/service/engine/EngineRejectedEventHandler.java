@@ -47,7 +47,13 @@ public class EngineRejectedEventHandler implements HandleEngineRejectedEventUseC
 			return;
 		}
 
-		log.warn("[ENGINE_REJECTED: ignored] 거부할 수 없는 상태입니다. orderId={}, accountId={}, status={}, reason={}",
-			orderId.value(), accountId.value(), fromStatus, reason);
+		if (fromStatus.equals(OrderStatus.PENDING)) {
+			log.warn("[ENGINE_REJECTED: ignored] 거부할 수 없는 상태입니다. orderId={}, accountId={}, status={}",
+				orderId.value(), accountId.value(), fromStatus);
+			return;
+		}
+
+		log.debug("[ENGINE_REJECTED: duplicate] 이미 활성화 이후 단계로 진입한 주문입니다. orderId={}, accountId={}, status={}",
+			orderId.value(), accountId.value(), fromStatus);
 	}
 }

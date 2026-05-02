@@ -308,7 +308,7 @@ public class Order {
 	 * </p>
 	 * @return 최종 상태 여부
 	 */
-	private boolean isFinal() {
+	public boolean isFinal() {
 		return switch (status) {
 			case FILLED, CANCELED, REJECTED -> true;
 			default -> false;

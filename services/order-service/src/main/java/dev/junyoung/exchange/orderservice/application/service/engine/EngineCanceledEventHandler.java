@@ -46,7 +46,7 @@ public class EngineCanceledEventHandler implements HandleEngineCanceledEventUseC
 			return;
 		}
 
-		log.warn("[ENGINE_CANCELED: ignored] 취소할 수 없는 상태입니다. orderId={}, accountId={}, status={}, reason={}",
-			orderId.value(), accountId.value(), fromStatus, reason);
+		log.warn("[ENGINE_CANCELED: ignored] 취소할 수 없는 상태입니다. orderId={}, accountId={}, status={}",
+			orderId.value(), accountId.value(), fromStatus);
 	}
 }

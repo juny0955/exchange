@@ -32,6 +32,7 @@ public class EngineAcceptedEventHandler implements HandleEngineAcceptedEventUseC
 
 		OrderStatus fromStatus = order.getStatus();
 
+		// RESERVED 상태 제외 모두 no-op 처리
 		if (fromStatus.equals(OrderStatus.RESERVED)) {
 			order.accepted();
 
@@ -42,8 +43,9 @@ public class EngineAcceptedEventHandler implements HandleEngineAcceptedEventUseC
 
 		if (fromStatus.equals(OrderStatus.NEW)
 			|| fromStatus.equals(OrderStatus.PARTIALLY_FILLED)
+			|| order.isFinal()
 			|| order.isCancelPendingStatus()) {
-			log.debug("[ENGINE_ACCEPTED: duplicate] 이미 예약 이후 단계로 진입한 주문입니다. orderId={}, accountId={}, status={}",
+			log.debug("[ENGINE_ACCEPTED: duplicate] 이미 활성화된 주문입니다. orderId={}, accountId={}, status={}",
 				orderId.value(), accountId.value(), fromStatus);
 			return;
 		}
