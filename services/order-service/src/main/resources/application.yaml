@@ -26,6 +26,7 @@ kafka:
     order-outbox:
       group-id: order-outbox-status-updater
       topics:
+        reserve-order: order.RESERVE_ORDER
         place-order: order.PLACE_ORDER
         cancel-order: order.CANCEL_ORDER
     engine:
