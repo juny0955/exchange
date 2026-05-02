@@ -131,6 +131,57 @@ public class Order {
 		return Optional.ofNullable(quoteQty).map(QuoteQty::value);
 	}
 
+
+	/**
+	 * 예약 상태로 변경한다.
+	 *
+	 * <p>
+	 *     주문 상태를 {@link OrderStatus#RESERVED}으로 변경한다.
+	 *  </p>
+	 *
+	 *  @throws DomainConflictException 대기 상태가 아닌 경우 ({@link OrderStatus#PENDING})
+	 */
+	public void reserved() {
+		if (!OrderStatus.PENDING.equals(status))
+			throw new OrderStateConflictException("대기 상태 주문이 아닙니다.");
+
+		status = OrderStatus.RESERVED;
+		updatedAt = Instant.now();
+	}
+
+	/**
+	 * 거부 상태로 변경한다.
+	 *
+	 * <p>
+	 *     주문 상태를 {@link OrderStatus#REJECTED}으로 변경한다.
+	 * </p>
+	 *
+	 * @throws DomainConflictException 예약 상태가 아닌 경우 ({@link OrderStatus#RESERVED})
+	 */
+	public void reject() {
+		if (!OrderStatus.RESERVED.equals(status))
+			throw new OrderStateConflictException("예약 상태 주문이 아닙니다.");
+
+		status = OrderStatus.REJECTED;
+		updatedAt = Instant.now();
+	}
+
+	/**
+	 * 활성 상태로 변경한다
+	 *
+	 * <p>
+	 *     주문 상태를 {@link OrderStatus#NEW}으로 변경한다.
+	 * </p>
+	 * @throws DomainConflictException 예약 상태 주문이 아닌 경우 ({@link OrderStatus#RESERVED})
+	 */
+	public void accepted() {
+		if (!OrderStatus.RESERVED.equals(status))
+			throw new OrderStateConflictException("예약 상태 주문이 아닙니다.");
+
+		status = OrderStatus.NEW;
+		updatedAt = Instant.now();
+	}
+
 	/**
 	 * 주문 취소를 요청한다.
 	 *
@@ -174,39 +225,6 @@ public class Order {
 			throw new OrderStateConflictException("취소 대기 주문이 아닙니다.");
 
 		status = OrderStatus.CANCELED;
-		updatedAt = Instant.now();
-	}
-
-	/**
-	 * 거부 상태로 변경한다.
-	 *
-	 * <p>
-	 *     주문 상태를 {@link OrderStatus#REJECTED}으로 변경한다.
-	 * </p>
-	 *
-	 * @throws DomainConflictException 대기 상태가 아닌 경우 ({@link OrderStatus#PENDING})
-	 */
-	public void reject() {
-		if (!OrderStatus.PENDING.equals(status))
-			throw new OrderStateConflictException("대기 상태 주문이 아닙니다.");
-
-		status = OrderStatus.REJECTED;
-		updatedAt = Instant.now();
-	}
-
-	/**
-	 * 활성 상태로 변경한다
-	 *
-	 * <p>
-	 *     주문 상태를 {@link OrderStatus#NEW}으로 변경한다.
-	 * </p>
-	 * @throws DomainConflictException 대기 상태 주문이 아닌 경우 ({@link OrderStatus#PENDING})
-	 */
-	public void accepted() {
-		if (!OrderStatus.PENDING.equals(status))
-			throw new OrderStateConflictException("대기 상태 주문이 아닙니다.");
-
-		status = OrderStatus.NEW;
 		updatedAt = Instant.now();
 	}
 

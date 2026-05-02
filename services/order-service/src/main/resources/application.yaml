@@ -36,6 +36,11 @@ kafka:
         matched: engine.MATCHED
         canceled: engine.CANCELED
         rejected: engine.REJECTED
+    account:
+      group-id: account-event-handler
+      topics:
+        reserved: account.RESERVED
+        rejected: account.REJECTED
 
 #  grpc:
 #    client:

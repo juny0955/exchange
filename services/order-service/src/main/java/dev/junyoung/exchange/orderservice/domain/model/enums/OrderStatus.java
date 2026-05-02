@@ -7,6 +7,11 @@ public enum OrderStatus {
 	PENDING,
 
 	/**
+	 * 잔고 검증 및 홀딩 완료
+	 */
+	RESERVED,
+
+	/**
 	 * 활성화 (엔진 진입)
 	 */
 	NEW,
