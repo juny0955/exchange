@@ -11,7 +11,7 @@ import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
 import dev.junyoung.exchange.orderservice.domain.model.entity.OrderHistory;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderHisReason;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
-import dev.junyoung.exchange.orderservice.domain.model.enums.RejectReason;
+import dev.junyoung.exchange.orderservice.domain.model.enums.EngineRejectReason;
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class EngineRejectedEventHandler implements HandleEngineRejectedEventUseC
 	private final OrderHistoryRepository orderHistoryRepository;
 
 	@Override
-	public void handle(OrderId orderId, AccountId accountId, RejectReason reason) {
+	public void handle(OrderId orderId, AccountId accountId, EngineRejectReason reason) {
 		Order order = orderRepository.findByIdAndAccountIdForUpdate(orderId, accountId)
 			.orElseThrow(OrderNotFoundException::new);
 
