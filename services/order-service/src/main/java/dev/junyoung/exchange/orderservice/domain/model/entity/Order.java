@@ -139,7 +139,7 @@ public class Order {
 	 *     주문 상태를 {@link OrderStatus#RESERVED}으로 변경한다.
 	 *  </p>
 	 *
-	 *  @throws DomainConflictException 대기 상태가 아닌 경우 ({@link OrderStatus#PENDING})
+	 *  @throws OrderStateConflictException 대기 상태가 아닌 경우 ({@link OrderStatus#PENDING})
 	 */
 	public void reserved() {
 		if (!OrderStatus.PENDING.equals(status))
@@ -175,7 +175,7 @@ public class Order {
 	 * <p>
 	 *     주문 상태를 {@link OrderStatus#NEW}으로 변경한다.
 	 * </p>
-	 * @throws DomainConflictException 예약 상태 주문이 아닌 경우 ({@link OrderStatus#RESERVED})
+	 * @throws OrderStateConflictException 예약 상태 주문이 아닌 경우 ({@link OrderStatus#RESERVED})
 	 */
 	public void accepted() {
 		if (!OrderStatus.RESERVED.equals(status))
