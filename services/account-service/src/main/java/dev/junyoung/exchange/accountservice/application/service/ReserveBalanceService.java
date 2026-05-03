@@ -28,10 +28,12 @@ import dev.junyoung.exchange.accountservice.domain.model.entity.Reservation;
 import dev.junyoung.exchange.accountservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.accountservice.domain.model.value.AssetCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class ReserveBalanceService implements ReserveBalanceUseCase {
 
     private final AccountRepository accountRepository;
@@ -42,6 +44,12 @@ public class ReserveBalanceService implements ReserveBalanceUseCase {
 
     @Override
     public void reserve(ReserveBalanceCommand command) {
+        if (reservationRepository.findByOrderIdAndAccountIdForUpdate(command.orderId(), command.accountId()).isPresent()) {
+            log.debug("[ACCOUNT_REJECTED: duplicate] 이미 처리된 예약 메세지 orderId={}, accountId={}",
+                command.orderId().value(), command.accountId().value());
+            return;
+        }
+
         validateAccount(command.accountId());
         validateAsset(command.assetCode());
 
