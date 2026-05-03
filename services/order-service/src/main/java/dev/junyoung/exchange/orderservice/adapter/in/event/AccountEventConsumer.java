@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
 
 import dev.junyoung.exchange.orderservice.adapter.in.event.annotation.DefaultRetryableTopic;
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.AccountReservedMessage;
-import dev.junyoung.exchange.orderservice.application.port.in.SaveConsumeFailedEventUseCase;
+import dev.junyoung.exchange.orderservice.application.port.in.SaveConsumerFailedEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.account.HandleAccountReservedEvent;
-import dev.junyoung.exchange.orderservice.application.port.in.command.SaveConsumeFailedEventCommand;
+import dev.junyoung.exchange.orderservice.application.port.in.command.SaveConsumerFailedEventCommand;
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ import tools.jackson.databind.ObjectMapper;
 public class AccountEventConsumer {
 
 	private final HandleAccountReservedEvent handleAccountReservedEvent;
-	private final SaveConsumeFailedEventUseCase saveConsumeFailedEventUseCase;
+	private final SaveConsumerFailedEventUseCase saveConsumerFailedEventUseCase;
 	private final ObjectMapper objectMapper;
 
 	@DefaultRetryableTopic
@@ -45,8 +45,8 @@ public class AccountEventConsumer {
 		log.error("[ACCOUNT-EVENT-DLT] 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", record.topic(), record.partition(), record.offset(), errorMessage, record.value());
 
 		try {
-			SaveConsumeFailedEventCommand command = new SaveConsumeFailedEventCommand(record.topic(), record.partition(), record.offset(), record.value(), errorMessage);
-			saveConsumeFailedEventUseCase.save(command);
+			SaveConsumerFailedEventCommand command = new SaveConsumerFailedEventCommand(record.topic(), record.partition(), record.offset(), record.value(), errorMessage);
+			saveConsumerFailedEventUseCase.save(command);
 		} catch (Exception e) {
 			log.error("[ACCOUNT-EVENT-DLT] 영속 실패", e);
 		}

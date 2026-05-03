@@ -1,5 +1,5 @@
 package dev.junyoung.exchange.orderservice.domain.model.enums;
 
-public enum ConsumeFailedEventStatus {
+public enum ConsumerFailedEventStatus {
     PENDING, RESOLVED
 }

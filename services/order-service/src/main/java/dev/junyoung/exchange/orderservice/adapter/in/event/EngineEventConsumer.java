@@ -5,9 +5,9 @@ import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineAccepte
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineCanceledMessage;
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineMatchedMessage;
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineRejectedMessage;
-import dev.junyoung.exchange.orderservice.application.port.in.SaveConsumeFailedEventUseCase;
+import dev.junyoung.exchange.orderservice.application.port.in.SaveConsumerFailedEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.command.EngineMatchedCommand;
-import dev.junyoung.exchange.orderservice.application.port.in.command.SaveConsumeFailedEventCommand;
+import dev.junyoung.exchange.orderservice.application.port.in.command.SaveConsumerFailedEventCommand;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineAcceptedEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineCanceledEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineMatchedEventUseCase;
@@ -37,7 +37,7 @@ public class EngineEventConsumer {
     private final HandleEngineCanceledEventUseCase canceledEventUseCase;
     private final ObjectMapper objectMapper;
 
-    private final SaveConsumeFailedEventUseCase saveConsumeFailedEventUseCase;
+    private final SaveConsumerFailedEventUseCase saveConsumerFailedEventUseCase;
 
     @DefaultRetryableTopic
     @KafkaListener(
@@ -95,8 +95,8 @@ public class EngineEventConsumer {
         log.error("[ENGINE-EVENT-DLT] 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", record.topic(), record.partition(), record.offset(), errorMessage, record.value());
 
         try {
-            SaveConsumeFailedEventCommand command = new SaveConsumeFailedEventCommand(record.topic(), record.partition(), record.offset(), record.value(), errorMessage);
-            saveConsumeFailedEventUseCase.save(command);
+            SaveConsumerFailedEventCommand command = new SaveConsumerFailedEventCommand(record.topic(), record.partition(), record.offset(), record.value(), errorMessage);
+            saveConsumerFailedEventUseCase.save(command);
         } catch (Exception e) {
             log.error("[ENGINE-EVENT-DLT] 영속 실패", e);
         }

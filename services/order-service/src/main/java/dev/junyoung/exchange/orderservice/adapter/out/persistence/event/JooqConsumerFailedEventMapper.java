@@ -4,11 +4,11 @@ import org.jooq.DSLContext;
 import org.jooq.JSON;
 
 import dev.junyoung.exchange.orderservice.Tables;
-import dev.junyoung.exchange.orderservice.domain.model.entity.ConsumeFailedEvent;
+import dev.junyoung.exchange.orderservice.domain.model.entity.ConsumerFailedEvent;
 import dev.junyoung.exchange.orderservice.tables.records.ConsumerFailedEventsRecord;
 
-public final class JooqConsumeFailedEventMapper {
-    public static ConsumerFailedEventsRecord toRecord(DSLContext dslContext, ConsumeFailedEvent event) {
+public final class JooqConsumerFailedEventMapper {
+    public static ConsumerFailedEventsRecord toRecord(DSLContext dslContext, ConsumerFailedEvent event) {
         ConsumerFailedEventsRecord record = dslContext.newRecord(Tables.CONSUMER_FAILED_EVENTS);
         record.setTopic(event.getTopic());
         record.setPartition(event.getPartition());
