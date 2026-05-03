@@ -152,15 +152,18 @@ public class Order {
 	/**
 	 * 거부 상태로 변경한다.
 	 *
-	 * <p>
-	 *     주문 상태를 {@link OrderStatus#REJECTED}으로 변경한다.
-	 * </p>
+	 * <p>주문 상태를 {@link OrderStatus#REJECTED}으로 변경한다.</p>
 	 *
-	 * @throws DomainConflictException 예약 상태가 아닌 경우 ({@link OrderStatus#RESERVED})
+	 * <ul>
+	 *     <li>{@link OrderStatus#PENDING} → {@link OrderStatus#REJECTED} (account 검증/홀드 거부)</li>
+	 *     <li>{@link OrderStatus#RESERVED} → {@link OrderStatus#REJECTED} (engine 거부)</li>
+	 * </ul>
+	 *
+	 * @throws OrderStateConflictException 대기/예약 상태가 아닌 경우
 	 */
 	public void reject() {
-		if (!OrderStatus.RESERVED.equals(status))
-			throw new OrderStateConflictException("예약 상태 주문이 아닙니다.");
+		if (!OrderStatus.PENDING.equals(status) && !OrderStatus.RESERVED.equals(status))
+			throw new OrderStateConflictException("대기/예약 상태 주문이 아닙니다.");
 
 		status = OrderStatus.REJECTED;
 		updatedAt = Instant.now();
