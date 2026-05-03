@@ -5,6 +5,11 @@ services:
     restart: always
     ports:
       - "25432:5432"
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_replication_slots=4
+      -c max_wal_senders=4
     environment:
       POSTGRES_DB: account_db
       POSTGRES_USER: exchange
@@ -21,6 +26,73 @@ services:
       retries: 5
     networks:
       - account-internal
+
+  account-kafka-connect:
+    image: debezium/connect:3.0.0.Final
+    container_name: account-kafka-connect
+    depends_on:
+      account-postgres:
+        condition: service_healthy
+    ports:
+      - "28083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka:19092
+      GROUP_ID: account-connect-cluster
+      CONFIG_STORAGE_TOPIC: account_connect_configs
+      OFFSET_STORAGE_TOPIC: account_connect_offsets
+      STATUS_STORAGE_TOPIC: account_connect_status
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+    networks:
+      - account-internal
+      - kafka-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8083/connectors" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  account-connector-init:
+    image: curlimages/curl:latest
+    container_name: account-connector-init
+    depends_on:
+      account-kafka-connect:
+        condition: service_healthy
+    restart: "no"
+    command: >
+      curl -s -X POST http://account-kafka-connect:8083/connectors
+      -H "Content-Type: application/json"
+      -d '{
+        "name": "account-outbox-connector",
+         "config": {
+            "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+            "plugin.name": "pgoutput",
+            "database.hostname": "account-postgres",
+            "database.port": "5432",
+            "database.user": "exchange",
+            "database.password": "exchange",
+            "database.dbname": "account_db",
+            "database.server.name": "account-db",
+            "topic.prefix": "account-db",
+            "table.include.list": "public.account_outbox",
+            "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+            "value.converter.schemas.enable": "false",
+            "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+            "transforms": "outbox",
+            "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+            "transforms.outbox.route.by.field": "event_type",
+            "transforms.outbox.route.topic.replacement": "account.$${routedByValue}",
+            "transforms.outbox.table.field.event.id": "outbox_id",
+            "transforms.outbox.table.field.event.key": "partition_key",
+            "transforms.outbox.table.field.event.type": "event_type",
+            "transforms.outbox.table.field.event.payload": "payload",
+            "transforms.outbox.table.expand.json.payload": "true"
+         }
+      }'
+    networks:
+      - account-internal
+      - kafka-network
 
 volumes:
   account-postgres_data:
