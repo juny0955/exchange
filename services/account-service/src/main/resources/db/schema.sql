@@ -67,6 +67,21 @@ CREATE TABLE ledger_entries (
     CONSTRAINT chk_ledger_entries_amount_non_negative CHECK (amount >= 0)
 );
 
+CREATE TABLE account_outbox (
+    outbox_id       UUID PRIMARY KEY,
+    aggregate_type  VARCHAR(32) NOT NULL DEFAULT 'ACCOUNT',
+    aggregate_id    UUID NOT NULL,
+    event_type      VARCHAR(32) NOT NULL,
+    reference_id    UUID,
+    reference_type  VARCHAR(32),
+    partition_key   VARCHAR(64) NOT NULL,
+    payload         JSONB NOT NULL,
+    status          VARCHAR(32) NOT NULL,
+    retry_count     INT NOT NULL DEFAULT 0,
+    created_at      TIMESTAMPTZ NOT NULL,
+    published_at    TIMESTAMPTZ
+);
+
 CREATE TABLE engine_failed_event (
     failed_id       BIGSERIAL PRIMARY KEY,
     topic           VARCHAR(64) NOT NULL,
