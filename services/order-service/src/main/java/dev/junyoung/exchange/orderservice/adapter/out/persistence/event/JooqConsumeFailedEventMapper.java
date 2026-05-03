@@ -1,4 +1,4 @@
-package dev.junyoung.exchange.orderservice.adapter.out.persistence.engine;
+package dev.junyoung.exchange.orderservice.adapter.out.persistence.event;
 
 import org.jooq.DSLContext;
 import org.jooq.JSON;

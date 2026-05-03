@@ -1,16 +1,16 @@
-package dev.junyoung.exchange.orderservice.adapter.out.persistence.engine;
+package dev.junyoung.exchange.orderservice.adapter.out.persistence.event;
 
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
 import dev.junyoung.exchange.orderservice.Tables;
-import dev.junyoung.exchange.orderservice.application.port.out.ConsumeEventRepository;
+import dev.junyoung.exchange.orderservice.application.port.out.ConsumeFailedEventRepository;
 import dev.junyoung.exchange.orderservice.domain.model.entity.ConsumeFailedEvent;
 import lombok.RequiredArgsConstructor;
 
 @Repository
 @RequiredArgsConstructor
-public class JooqConsumeEventRepository implements ConsumeEventRepository {
+public class JooqConsumeFailedEventRepository implements ConsumeFailedEventRepository {
 
     private final DSLContext dslContext;
 
