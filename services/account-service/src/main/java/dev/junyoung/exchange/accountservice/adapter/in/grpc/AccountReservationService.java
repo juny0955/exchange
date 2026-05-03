@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 
 @GrpcService
 @RequiredArgsConstructor
+@Deprecated
 public class AccountReservationService extends AccountReservationServiceGrpc.AccountReservationServiceImplBase {
 
     private final ReserveBalanceUseCase reserveBalanceUseCase;
