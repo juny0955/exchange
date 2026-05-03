@@ -1,13 +1,13 @@
 package dev.junyoung.exchange.orderservice.adapter.in.event;
 
-import dev.junyoung.exchange.orderservice.adapter.in.event.annotation.EngineRetryableTopic;
+import dev.junyoung.exchange.orderservice.adapter.in.event.annotation.DefaultRetryableTopic;
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineAcceptedMessage;
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineCanceledMessage;
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineMatchedMessage;
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineRejectedMessage;
-import dev.junyoung.exchange.orderservice.application.port.in.SaveEngineFailedEventUseCase;
+import dev.junyoung.exchange.orderservice.application.port.in.SaveConsumerFailedEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.command.EngineMatchedCommand;
-import dev.junyoung.exchange.orderservice.application.port.in.command.SaveEngineFailedEventCommand;
+import dev.junyoung.exchange.orderservice.application.port.in.command.SaveConsumerFailedEventCommand;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineAcceptedEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineCanceledEventUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineMatchedEventUseCase;
@@ -37,9 +37,9 @@ public class EngineEventConsumer {
     private final HandleEngineCanceledEventUseCase canceledEventUseCase;
     private final ObjectMapper objectMapper;
 
-    private final SaveEngineFailedEventUseCase saveEngineFailedEventUseCase;
+    private final SaveConsumerFailedEventUseCase saveConsumerFailedEventUseCase;
 
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     @KafkaListener(
         topics = "${kafka.listeners.engine.topics.accepted}",
         groupId = "${kafka.listeners.engine.group-id}"
@@ -49,7 +49,7 @@ public class EngineEventConsumer {
         acceptedEventUseCase.handle(new OrderId(message.orderId()), new AccountId(message.accountId()));
     }
 
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     @KafkaListener(
         topics = "${kafka.listeners.engine.topics.matched}",
         groupId = "${kafka.listeners.engine.group-id}"
@@ -67,7 +67,7 @@ public class EngineEventConsumer {
         matchedEventUseCase.handle(commands);
     }
 
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     @KafkaListener(
         topics = "${kafka.listeners.engine.topics.canceled}",
         groupId = "${kafka.listeners.engine.group-id}"
@@ -77,7 +77,7 @@ public class EngineEventConsumer {
         canceledEventUseCase.handle(new OrderId(message.orderId()), new AccountId(message.accountId()), message.reason());
     }
 
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     @KafkaListener(
         topics = "${kafka.listeners.engine.topics.rejected}",
         groupId = "${kafka.listeners.engine.group-id}"
@@ -92,13 +92,13 @@ public class EngineEventConsumer {
         ConsumerRecord<String, String> record,
         @Header(KafkaHeaders.EXCEPTION_MESSAGE) String errorMessage
     ) {
-        log.error("엔진 이벤트 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", record.topic(), record.partition(), record.offset(), errorMessage, record.value());
+        log.error("[ENGINE-EVENT-DLT] 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", record.topic(), record.partition(), record.offset(), errorMessage, record.value());
 
         try {
-            SaveEngineFailedEventCommand command = new SaveEngineFailedEventCommand(record.topic(), record.partition(), record.offset(), record.value(), errorMessage);
-            saveEngineFailedEventUseCase.save(command);
+            SaveConsumerFailedEventCommand command = new SaveConsumerFailedEventCommand(record.topic(), record.partition(), record.offset(), record.value(), errorMessage);
+            saveConsumerFailedEventUseCase.save(command);
         } catch (Exception e) {
-            log.error("엔진 이벤트 DLT 영속 실패", e);
+            log.error("[ENGINE-EVENT-DLT] 영속 실패", e);
         }
     }
 }

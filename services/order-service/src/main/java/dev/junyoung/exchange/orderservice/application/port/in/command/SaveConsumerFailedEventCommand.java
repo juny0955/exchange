@@ -1,6 +1,6 @@
 package dev.junyoung.exchange.orderservice.application.port.in.command;
 
-public record SaveEngineFailedEventCommand(
+public record SaveConsumerFailedEventCommand(
     String topic,
     int partition,
     long offset,

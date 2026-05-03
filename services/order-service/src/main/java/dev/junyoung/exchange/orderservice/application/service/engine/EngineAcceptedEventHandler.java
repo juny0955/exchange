@@ -1,4 +1,4 @@
-package dev.junyoung.exchange.orderservice.application.engine.handler;
+package dev.junyoung.exchange.orderservice.application.service.engine;
 
 import dev.junyoung.exchange.orderservice.application.exception.OrderNotFoundException;
 import dev.junyoung.exchange.orderservice.application.port.in.engine.HandleEngineAcceptedEventUseCase;
@@ -11,12 +11,15 @@ import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class EngineAcceptedEventHandler implements HandleEngineAcceptedEventUseCase {
 
 	private final OrderRepository orderRepository;
@@ -29,12 +32,25 @@ public class EngineAcceptedEventHandler implements HandleEngineAcceptedEventUseC
 
 		OrderStatus fromStatus = order.getStatus();
 
-		// 취소 대기 상태일시 상태 변경 하지않고 이력만 남김
-		if (!order.isCancelPendingStatus()) {
+		// RESERVED 상태 제외 모두 no-op 처리
+		if (fromStatus.equals(OrderStatus.RESERVED)) {
 			order.accepted();
+
 			orderRepository.updateStatus(order);
+			orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.ENGINE_ACCEPTED));
+			return;
 		}
 
-		orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.ENGINE_ACCEPTED));
+		if (fromStatus.equals(OrderStatus.NEW)
+			|| fromStatus.equals(OrderStatus.PARTIALLY_FILLED)
+			|| order.isFinal()
+			|| order.isCancelPendingStatus()) {
+			log.debug("[ENGINE_ACCEPTED: duplicate] 이미 활성화된 주문입니다. orderId={}, accountId={}, status={}",
+				orderId.value(), accountId.value(), fromStatus);
+			return;
+		}
+
+		log.warn("[ENGINE_ACCEPTED: ignored] 활성화할 수 없는 상태입니다. orderId={}, accountId={}, status={}",
+			orderId.value(), accountId.value(), fromStatus);
 	}
 }

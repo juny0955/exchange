@@ -1,5 +1,8 @@
 package dev.junyoung.exchange.orderservice.application.service;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import dev.junyoung.exchange.orderservice.application.exception.OrderDuplicateException;
 import dev.junyoung.exchange.orderservice.application.port.in.PlaceOrderUseCase;
 import dev.junyoung.exchange.orderservice.application.port.in.command.PlaceOrderCommand;
@@ -10,11 +13,10 @@ import dev.junyoung.exchange.orderservice.application.port.out.OrderRepository;
 import dev.junyoung.exchange.orderservice.application.service.outbox.OrderOutboxFactory;
 import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
 import dev.junyoung.exchange.orderservice.domain.model.entity.OrderHistory;
-import dev.junyoung.exchange.orderservice.domain.model.entity.OrderOutbox;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
+import dev.junyoung.exchange.orderservice.domain.service.AssetReserveCalculator;
+import dev.junyoung.exchange.orderservice.domain.service.dto.AssetReserveResult;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -52,8 +54,9 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 
 		orderRepository.save(order);
 		orderHistoryRepository.save(OrderHistory.init(order.getOrderId()));
-		OrderOutbox orderOutbox = orderOutboxFactory.placeOrder(order);
-		orderOutboxRepository.save(orderOutbox);
+
+		AssetReserveResult calculate = AssetReserveCalculator.calculate(order);
+		orderOutboxRepository.save(orderOutboxFactory.reserveOrder(order, calculate));
 		return order.getOrderId();
 	}
 }

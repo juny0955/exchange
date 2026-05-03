@@ -1,6 +1,6 @@
 package dev.junyoung.exchange.orderservice.domain.model.enums;
 
-public enum RejectReason {
+public enum EngineRejectReason {
     ChannelFull,
     SymbolNotFound,
     InvalidOrderKind

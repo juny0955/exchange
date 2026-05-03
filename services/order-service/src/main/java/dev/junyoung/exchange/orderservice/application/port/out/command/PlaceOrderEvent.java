@@ -19,11 +19,11 @@ public record PlaceOrderEvent(
     BigDecimal quantity,
     BigDecimal quoteQty
 ) {
-    public static PlaceOrderEvent of(Order order) {
+    public static PlaceOrderEvent from(Order order) {
         return new PlaceOrderEvent(
             order.getOrderId().value(),
             order.getAccountId().value(),
-            OrderSymbolEvent.of(order.getSymbol()),
+            OrderSymbolEvent.from(order.getSymbol()),
             order.getSide(),
             order.getOrderType(),
             order.getTif(),

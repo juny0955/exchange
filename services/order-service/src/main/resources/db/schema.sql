@@ -38,6 +38,7 @@ CREATE TABLE trades (
 
     PRIMARY KEY (order_id, trade_id)
 );
+CREATE INDEX idx_trades_trade_id ON trades (trade_id);
 
 CREATE TABLE order_history (
     order_history_id BIGSERIAL PRIMARY KEY,
@@ -63,7 +64,7 @@ CREATE TABLE order_outbox (
     published_at    TIMESTAMPTZ
 );
 
-CREATE TABLE engine_failed_event (
+CREATE TABLE consumer_failed_events (
     failed_id       BIGSERIAL PRIMARY KEY,
     topic           VARCHAR(64) NOT NULL,
     partition       INT NOT NULL,

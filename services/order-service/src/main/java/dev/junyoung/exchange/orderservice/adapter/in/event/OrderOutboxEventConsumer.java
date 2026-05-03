@@ -46,6 +46,7 @@ public class OrderOutboxEventConsumer {
     )
     @KafkaListener(
         topics = {
+            "${kafka.listeners.order-outbox.topics.reserve-order}",
             "${kafka.listeners.order-outbox.topics.place-order}",
             "${kafka.listeners.order-outbox.topics.cancel-order}"
         },
