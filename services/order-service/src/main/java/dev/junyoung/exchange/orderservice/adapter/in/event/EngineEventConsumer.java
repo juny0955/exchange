@@ -92,13 +92,13 @@ public class EngineEventConsumer {
         ConsumerRecord<String, String> record,
         @Header(KafkaHeaders.EXCEPTION_MESSAGE) String errorMessage
     ) {
-        log.error("엔진 이벤트 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", record.topic(), record.partition(), record.offset(), errorMessage, record.value());
+        log.error("[ENGINE-EVENT-DLT] 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", record.topic(), record.partition(), record.offset(), errorMessage, record.value());
 
         try {
             SaveConsumeFailedEventCommand command = new SaveConsumeFailedEventCommand(record.topic(), record.partition(), record.offset(), record.value(), errorMessage);
             saveConsumeFailedEventUseCase.save(command);
         } catch (Exception e) {
-            log.error("엔진 이벤트 DLT 영속 실패", e);
+            log.error("[ENGINE-EVENT-DLT] 영속 실패", e);
         }
     }
 }
