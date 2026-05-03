@@ -8,8 +8,10 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 import dev.junyoung.exchange.orderservice.adapter.in.event.annotation.DefaultRetryableTopic;
+import dev.junyoung.exchange.orderservice.adapter.in.event.message.AccountRejectedMessage;
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.AccountReservedMessage;
 import dev.junyoung.exchange.orderservice.application.port.in.SaveConsumerFailedEventUseCase;
+import dev.junyoung.exchange.orderservice.application.port.in.account.HandleAccountRejectedEvent;
 import dev.junyoung.exchange.orderservice.application.port.in.account.HandleAccountReservedEvent;
 import dev.junyoung.exchange.orderservice.application.port.in.command.SaveConsumerFailedEventCommand;
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
@@ -24,6 +26,7 @@ import tools.jackson.databind.ObjectMapper;
 public class AccountEventConsumer {
 
 	private final HandleAccountReservedEvent handleAccountReservedEvent;
+	private final HandleAccountRejectedEvent handleAccountRejectedEvent;
 	private final SaveConsumerFailedEventUseCase saveConsumerFailedEventUseCase;
 	private final ObjectMapper objectMapper;
 
@@ -35,6 +38,16 @@ public class AccountEventConsumer {
 	public void consumeReserved(ConsumerRecord<String, String> record) {
 		AccountReservedMessage message = objectMapper.readValue(record.value(), AccountReservedMessage.class);
 		handleAccountReservedEvent.handle(new OrderId(message.orderId()), new AccountId(message.accountId()));
+	}
+
+	@DefaultRetryableTopic
+	@KafkaListener(
+		topics = "${kafka.listeners.account.topics.rejected}",
+		groupId = "${kafka.listeners.account.group-id}"
+	)
+	public void consumeRejected(ConsumerRecord<String, String> record) {
+		AccountRejectedMessage message = objectMapper.readValue(record.value(), AccountRejectedMessage.class);
+		handleAccountRejectedEvent.handle(new OrderId(message.orderId()), new AccountId(message.accountId()), message.reason());
 	}
 
 	@DltHandler
