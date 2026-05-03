@@ -1,6 +1,6 @@
 package dev.junyoung.exchange.orderservice.adapter.in.event;
 
-import dev.junyoung.exchange.orderservice.adapter.in.event.annotation.EngineRetryableTopic;
+import dev.junyoung.exchange.orderservice.adapter.in.event.annotation.DefaultRetryableTopic;
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineAcceptedMessage;
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineCanceledMessage;
 import dev.junyoung.exchange.orderservice.adapter.in.event.message.EngineMatchedMessage;
@@ -39,7 +39,7 @@ public class EngineEventConsumer {
 
     private final SaveConsumeFailedEventUseCase saveConsumeFailedEventUseCase;
 
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     @KafkaListener(
         topics = "${kafka.listeners.engine.topics.accepted}",
         groupId = "${kafka.listeners.engine.group-id}"
@@ -49,7 +49,7 @@ public class EngineEventConsumer {
         acceptedEventUseCase.handle(new OrderId(message.orderId()), new AccountId(message.accountId()));
     }
 
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     @KafkaListener(
         topics = "${kafka.listeners.engine.topics.matched}",
         groupId = "${kafka.listeners.engine.group-id}"
@@ -67,7 +67,7 @@ public class EngineEventConsumer {
         matchedEventUseCase.handle(commands);
     }
 
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     @KafkaListener(
         topics = "${kafka.listeners.engine.topics.canceled}",
         groupId = "${kafka.listeners.engine.group-id}"
@@ -77,7 +77,7 @@ public class EngineEventConsumer {
         canceledEventUseCase.handle(new OrderId(message.orderId()), new AccountId(message.accountId()), message.reason());
     }
 
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     @KafkaListener(
         topics = "${kafka.listeners.engine.topics.rejected}",
         groupId = "${kafka.listeners.engine.group-id}"
