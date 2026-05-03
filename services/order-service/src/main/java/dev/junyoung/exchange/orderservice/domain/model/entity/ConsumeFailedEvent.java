@@ -1,6 +1,6 @@
 package dev.junyoung.exchange.orderservice.domain.model.entity;
 
-import dev.junyoung.exchange.orderservice.domain.model.enums.EngineFailedEventStatus;
+import dev.junyoung.exchange.orderservice.domain.model.enums.ConsumeFailedEventStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,33 +8,33 @@ import java.time.Instant;
 
 @Getter
 @AllArgsConstructor
-public class EngineFailedEvent {
+public class ConsumeFailedEvent {
     private final Long failedId;
     private final String topic;
     private final int partition;
     private final long offset;
     private final String payload;
     private final String errorMessage;
-    private EngineFailedEventStatus status;
+    private ConsumeFailedEventStatus status;
     private int retryCount;
     private final Instant failedAt;
     private Instant resolvedAt;
 
-    public static EngineFailedEvent create(
+    public static ConsumeFailedEvent create(
         String topic,
         int partition,
         long offset,
         String payload,
         String errorMessage
     ) {
-        return new EngineFailedEvent(
+        return new ConsumeFailedEvent(
             null,
             topic,
             partition,
             offset,
             payload,
             errorMessage,
-            EngineFailedEventStatus.PENDING,
+            ConsumeFailedEventStatus.PENDING,
             0,
             Instant.now(),
             null
