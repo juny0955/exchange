@@ -44,8 +44,8 @@ public class ReserveBalanceService implements ReserveBalanceUseCase {
 
     @Override
     public void reserve(ReserveBalanceCommand command) {
-        if (reservationRepository.findByOrderIdAndAccountIdForUpdate(command.orderId(), command.accountId()).isPresent()) {
-            log.debug("[ACCOUNT_REJECTED: duplicate] 이미 처리된 예약 메세지 orderId={}, accountId={}",
+        if (reservationRepository.existsOrderIdAndAccountId(command.orderId(), command.accountId())) {
+            log.debug("[ACCOUNT_RESERVED: duplicate] 이미 처리된 예약 메세지 orderId={}, accountId={}",
                 command.orderId().value(), command.accountId().value());
             return;
         }

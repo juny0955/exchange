@@ -13,6 +13,7 @@ public interface ReservationRepository {
     void updateAll(List<Reservation> reservations);
 
     Optional<Reservation> findByOrderIdAndAccountIdForUpdate(OrderId orderId, AccountId accountId);
-
     List<Reservation> findAllByLockKeyForUpdate(List<ReservationLockKey> keys);
+
+    boolean existsOrderIdAndAccountId(OrderId orderId, AccountId accountId);
 }
