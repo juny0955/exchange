@@ -1,7 +1,12 @@
 package dev.junyoung.exchange.accountservice.adapter.in.event;
 
+import dev.junyoung.exchange.accountservice.application.port.in.SaveConsumerFailedEventUseCase;
+import dev.junyoung.exchange.accountservice.application.port.in.command.SaveConsumerFailedEventCommand;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 import dev.junyoung.exchange.accountservice.adapter.in.event.annotation.DefaultRetryableTopic;
@@ -19,6 +24,8 @@ public class OrderEventConsumer {
 	private final ReserveBalanceUseCase reserveBalanceUseCase;
 	private final ObjectMapper objectMapper;
 
+	private final SaveConsumerFailedEventUseCase saveConsumerFailedEventUseCase;
+
 	@DefaultRetryableTopic
 	@KafkaListener(
 		topics = "${kafka.listeners.order.topics.reserve}",
@@ -27,5 +34,20 @@ public class OrderEventConsumer {
 	public void consumeReserve(ConsumerRecord<String, String> record) {
 		OrderReserveMessage message = objectMapper.readValue(record.value(), OrderReserveMessage.class);
 		reserveBalanceUseCase.reserve(message.toCommand());
+	}
+
+	@DltHandler
+	public void handleDlt(
+		ConsumerRecord<String, String> record,
+		@Header(KafkaHeaders.EXCEPTION_MESSAGE) String errorMessage
+	) {
+		log.error("[ORDER-EVENT-DLT] 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", record.topic(), record.partition(), record.offset(), errorMessage, record.value());
+
+		try {
+			SaveConsumerFailedEventCommand command = new SaveConsumerFailedEventCommand(record.topic(), record.partition(), record.offset(), record.value(), errorMessage);
+			saveConsumerFailedEventUseCase.save(command);
+		} catch (Exception e) {
+			log.error("[ORDER-EVENT-DLT] 영속 실패", e);
+		}
 	}
 }
