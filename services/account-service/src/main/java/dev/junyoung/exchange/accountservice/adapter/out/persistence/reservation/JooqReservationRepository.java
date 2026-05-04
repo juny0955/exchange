@@ -79,4 +79,14 @@ public class JooqReservationRepository implements ReservationRepository {
             .forUpdate()
             .fetch(JooqReservationMapper::toDomain);
     }
+
+    @Override
+    public boolean existsOrderIdAndAccountId(OrderId orderId, AccountId accountId) {
+        return dslContext.fetchExists(
+            dslContext.selectOne()
+                .from(Tables.RESERVATIONS)
+                .where(Tables.RESERVATIONS.ORDER_ID.eq(orderId.value()))
+                .and(Tables.RESERVATIONS.ACCOUNT_ID.eq(accountId.value()))
+        );
+    }
 }
