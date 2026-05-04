@@ -11,6 +11,7 @@ import org.springframework.grpc.server.exception.GrpcExceptionHandler;
 import org.springframework.stereotype.Component;
 
 @Component
+@Deprecated
 public class GrpcExceptionAdvice implements GrpcExceptionHandler {
 
     @Override

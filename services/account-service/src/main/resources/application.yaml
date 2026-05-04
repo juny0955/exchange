@@ -24,6 +24,10 @@ spring:
 
 kafka:
   listeners:
+    order:
+      group-id: account-order-event-handler
+      topics:
+        reserve: order.RESERVE_ORDER
     engine:
       group-id: account-engine-event-handler
       topics:
