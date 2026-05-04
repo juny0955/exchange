@@ -24,5 +24,5 @@ import java.lang.annotation.*;
     },
     dltTopicSuffix = ".dlt"
 )
-public @interface EngineRetryableTopic {
+public @interface DefaultRetryableTopic {
 }

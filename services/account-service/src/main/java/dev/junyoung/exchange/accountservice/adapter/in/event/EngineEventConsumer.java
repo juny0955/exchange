@@ -2,7 +2,7 @@ package dev.junyoung.exchange.accountservice.adapter.in.event;
 
 import java.util.List;
 
-import dev.junyoung.exchange.accountservice.adapter.in.event.annotation.EngineRetryableTopic;
+import dev.junyoung.exchange.accountservice.adapter.in.event.annotation.DefaultRetryableTopic;
 import dev.junyoung.exchange.accountservice.adapter.in.event.message.EngineCanceledMessage;
 import dev.junyoung.exchange.accountservice.adapter.in.event.message.EngineMatchedMessage;
 import dev.junyoung.exchange.accountservice.adapter.in.event.message.EngineRejectedMessage;
@@ -39,7 +39,7 @@ public class EngineEventConsumer {
         topics = "${kafka.listeners.engine.topics.canceled}",
         groupId = "${kafka.listeners.engine.group-id}"
     )
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     public void consumeCanceled(ConsumerRecord<String, String> record) {
         EngineCanceledMessage message = objectMapper.readValue(record.value(), EngineCanceledMessage.class);
         releaseBalanceUseCase.release(new ReleaseBalanceCommand(new AccountId(message.accountId()), new OrderId(message.orderId())));
@@ -49,7 +49,7 @@ public class EngineEventConsumer {
         topics = "${kafka.listeners.engine.topics.rejected}",
         groupId = "${kafka.listeners.engine.group-id}"
     )
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     public void consumeRejected(ConsumerRecord<String, String> record) {
         EngineRejectedMessage message = objectMapper.readValue(record.value(), EngineRejectedMessage.class);
         releaseBalanceUseCase.release(new ReleaseBalanceCommand(new AccountId(message.accountId()), new OrderId(message.orderId())));
@@ -59,7 +59,7 @@ public class EngineEventConsumer {
         topics = "${kafka.listeners.engine.topics.matched}",
         groupId = "${kafka.listeners.engine.group-id}"
     )
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     public void consumeMatched(ConsumerRecord<String, String> record) {
         List<EngineMatchedMessage> messages = objectMapper.readValue(
             record.value(),

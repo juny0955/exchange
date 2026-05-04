@@ -4,7 +4,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import dev.junyoung.exchange.accountservice.adapter.in.event.annotation.EngineRetryableTopic;
+import dev.junyoung.exchange.accountservice.adapter.in.event.annotation.DefaultRetryableTopic;
 import dev.junyoung.exchange.accountservice.adapter.in.event.message.OrderReserveMessage;
 import dev.junyoung.exchange.accountservice.application.port.in.ReserveBalanceUseCase;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public class OrderEventConsumer {
 	private final ReserveBalanceUseCase reserveBalanceUseCase;
 	private final ObjectMapper objectMapper;
 
-	@EngineRetryableTopic
+	@DefaultRetryableTopic
 	@KafkaListener(
 		topics = "${kafka.listeners.order.topics.reserve}",
 		groupId = "${kafka.listeners.order.group-id}"
