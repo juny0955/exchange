@@ -1,5 +1,5 @@
 package dev.junyoung.exchange.accountservice.domain.model.enums;
 
-public enum EngineFailedEventStatus {
+public enum ConsumerFailedEventStatus {
     PENDING, RESOLVED
 }
