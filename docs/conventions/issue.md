@@ -1,7 +1,7 @@
 # Issue Convention
 
 ## Title Format
-`[Type] 이슈 요약` (예: `[Feat] 사용자 잔액 조회 API 구현`, `[Bug] OrderEventConsumer DLT 핸들러 누락`)
+`이슈 요약` (예: `사용자 잔액 조회 API 구현`, `OrderEventConsumer DLT 핸들러 누락`)
 
 ## Template
 
