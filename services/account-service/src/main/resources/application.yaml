@@ -24,6 +24,11 @@ spring:
 
 kafka:
   listeners:
+    account-outbox:
+      group-id: account-outbox-status-updater
+      topics:
+        reserved: account.RESERVED
+        rejected: account.REJECTED
     order:
       group-id: account-order-event-handler
       topics:
