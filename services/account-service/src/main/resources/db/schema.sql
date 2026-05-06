@@ -82,7 +82,7 @@ CREATE TABLE account_outbox (
     published_at    TIMESTAMPTZ
 );
 
-CREATE TABLE engine_failed_event (
+CREATE TABLE consumer_failed_events (
     failed_id       BIGSERIAL PRIMARY KEY,
     topic           VARCHAR(64) NOT NULL,
     partition       INT NOT NULL,

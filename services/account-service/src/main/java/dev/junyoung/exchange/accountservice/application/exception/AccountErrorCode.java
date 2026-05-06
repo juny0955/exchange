@@ -12,7 +12,7 @@ public enum AccountErrorCode implements ErrorCode {
     ASSET_INACTIVE          (HttpStatus.CONFLICT,   "ASSET-INACTIVE",       "거래 불가능한 자산입니다."),
     BALANCE_NOT_FOUND       (HttpStatus.NOT_FOUND,  "BALANCE-NOT-FOUND",    "해당 잔고를 찾을 수 없습니다."),
     RESERVATION_NOT_FOUND   (HttpStatus.NOT_FOUND,  "RESERVATION-NOT-FOUND","해당 예약을 찾을 수 없습니다."),
-    ;
+    OUTBOX_NOT_FOUND        (HttpStatus.NOT_FOUND, "OUTBOX-NOT-FOUND",      "해당 Outbox를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;

@@ -1,7 +1,7 @@
 package dev.junyoung.exchange.accountservice.domain.model.entity;
 
 import dev.junyoung.exchange.accountservice.domain.exception.AccountInvalidException;
-import dev.junyoung.exchange.accountservice.domain.exception.AccountStateConflictException;
+import dev.junyoung.exchange.accountservice.domain.exception.InsufficientBalanceException;
 import dev.junyoung.exchange.accountservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.accountservice.domain.model.value.AssetCode;
 import lombok.AllArgsConstructor;
@@ -33,14 +33,14 @@ public class Balance {
 
     public void withdraw(BigDecimal amount) {
         requirePositive(amount, "출금 금액");
-        if (available.compareTo(amount) < 0) throw new AccountStateConflictException("가용 잔고가 부족합니다.");
+        if (available.compareTo(amount) < 0) throw new InsufficientBalanceException("가용 잔고가 부족합니다.");
         available = available.subtract(amount);
         updatedAt = Instant.now();
     }
 
     public void reserve(BigDecimal amount) {
         requirePositive(amount, "예약 금액");
-        if (available.compareTo(amount) < 0) throw new AccountStateConflictException("예약을 위한 가용 잔고가 부족합니다.");
+        if (available.compareTo(amount) < 0) throw new InsufficientBalanceException("예약을 위한 가용 잔고가 부족합니다.");
         available = available.subtract(amount);
         held = held.add(amount);
         updatedAt = Instant.now();
@@ -48,7 +48,7 @@ public class Balance {
 
     public void release(BigDecimal amount) {
         requirePositive(amount, "해제 금액");
-        if (held.compareTo(amount) < 0) throw new AccountStateConflictException("보류 잔고가 부족합니다.");
+        if (held.compareTo(amount) < 0) throw new InsufficientBalanceException("보류 잔고가 부족합니다.");
         held = held.subtract(amount);
         available = available.add(amount);
         updatedAt = Instant.now();
@@ -57,7 +57,7 @@ public class Balance {
     /** 체결 시 held에서 차감 (거래 상대방에게 이전, available로 복귀 없음). */
     public void settleHeld(BigDecimal amount) {
         requirePositive(amount, "정산 금액");
-        if (held.compareTo(amount) < 0) throw new AccountStateConflictException("정산을 위한 보류 잔고가 부족합니다.");
+        if (held.compareTo(amount) < 0) throw new InsufficientBalanceException("정산을 위한 보류 잔고가 부족합니다.");
         held = held.subtract(amount);
         updatedAt = Instant.now();
     }

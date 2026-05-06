@@ -2,15 +2,15 @@ package dev.junyoung.exchange.accountservice.adapter.in.event;
 
 import java.util.List;
 
-import dev.junyoung.exchange.accountservice.adapter.in.event.annotation.EngineRetryableTopic;
+import dev.junyoung.exchange.accountservice.adapter.in.event.annotation.DefaultRetryableTopic;
 import dev.junyoung.exchange.accountservice.adapter.in.event.message.EngineCanceledMessage;
 import dev.junyoung.exchange.accountservice.adapter.in.event.message.EngineMatchedMessage;
 import dev.junyoung.exchange.accountservice.adapter.in.event.message.EngineRejectedMessage;
 import dev.junyoung.exchange.accountservice.application.port.in.ReleaseBalanceUseCase;
-import dev.junyoung.exchange.accountservice.application.port.in.SaveEngineFailedEventUseCase;
+import dev.junyoung.exchange.accountservice.application.port.in.SaveConsumerFailedEventUseCase;
 import dev.junyoung.exchange.accountservice.application.port.in.SettleBalanceUseCase;
 import dev.junyoung.exchange.accountservice.application.port.in.command.ReleaseBalanceCommand;
-import dev.junyoung.exchange.accountservice.application.port.in.command.SaveEngineFailedEventCommand;
+import dev.junyoung.exchange.accountservice.application.port.in.command.SaveConsumerFailedEventCommand;
 import dev.junyoung.exchange.accountservice.application.port.in.command.SettleBalanceCommand;
 import dev.junyoung.exchange.accountservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.accountservice.domain.model.value.OrderId;
@@ -33,13 +33,13 @@ public class EngineEventConsumer {
     private final SettleBalanceUseCase settleBalanceUseCase;
     private final ObjectMapper objectMapper;
 
-    private final SaveEngineFailedEventUseCase saveEngineFailedEventUseCase;
+    private final SaveConsumerFailedEventUseCase saveConsumerFailedEventUseCase;
 
     @KafkaListener(
         topics = "${kafka.listeners.engine.topics.canceled}",
         groupId = "${kafka.listeners.engine.group-id}"
     )
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     public void consumeCanceled(ConsumerRecord<String, String> record) {
         EngineCanceledMessage message = objectMapper.readValue(record.value(), EngineCanceledMessage.class);
         releaseBalanceUseCase.release(new ReleaseBalanceCommand(new AccountId(message.accountId()), new OrderId(message.orderId())));
@@ -49,7 +49,7 @@ public class EngineEventConsumer {
         topics = "${kafka.listeners.engine.topics.rejected}",
         groupId = "${kafka.listeners.engine.group-id}"
     )
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     public void consumeRejected(ConsumerRecord<String, String> record) {
         EngineRejectedMessage message = objectMapper.readValue(record.value(), EngineRejectedMessage.class);
         releaseBalanceUseCase.release(new ReleaseBalanceCommand(new AccountId(message.accountId()), new OrderId(message.orderId())));
@@ -59,7 +59,7 @@ public class EngineEventConsumer {
         topics = "${kafka.listeners.engine.topics.matched}",
         groupId = "${kafka.listeners.engine.group-id}"
     )
-    @EngineRetryableTopic
+    @DefaultRetryableTopic
     public void consumeMatched(ConsumerRecord<String, String> record) {
         List<EngineMatchedMessage> messages = objectMapper.readValue(
             record.value(),
@@ -78,13 +78,13 @@ public class EngineEventConsumer {
         ConsumerRecord<String, String> record,
         @Header(KafkaHeaders.EXCEPTION_MESSAGE) String errorMessage
     ) {
-        log.error("엔진 이벤트 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", record.topic(), record.partition(), record.offset(), errorMessage, record.value());
+        log.error("[ENGINE-EVENT-DLT] 최종 처리 실패 topic={}, partition={}, offset={}, Error={}, Payload={}", record.topic(), record.partition(), record.offset(), errorMessage, record.value());
 
         try {
-            SaveEngineFailedEventCommand command = new SaveEngineFailedEventCommand(record.topic(), record.partition(), record.offset(), record.value(), errorMessage);
-            saveEngineFailedEventUseCase.save(command);
+            SaveConsumerFailedEventCommand command = new SaveConsumerFailedEventCommand(record.topic(), record.partition(), record.offset(), record.value(), errorMessage);
+            saveConsumerFailedEventUseCase.save(command);
         } catch (Exception e) {
-            log.error("엔진 이벤트 DLT 영속 실패", e);
+            log.error("[ENGINE-EVENT-DLT] 영속 실패", e);
         }
     }
 }

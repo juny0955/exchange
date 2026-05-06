@@ -13,11 +13,13 @@ import dev.junyoung.exchange.accountservice.application.exception.AssetNotFoundE
 import dev.junyoung.exchange.accountservice.application.exception.BalanceNotFoundException;
 import dev.junyoung.exchange.accountservice.application.port.in.ReserveBalanceUseCase;
 import dev.junyoung.exchange.accountservice.application.port.in.command.ReserveBalanceCommand;
+import dev.junyoung.exchange.accountservice.application.port.out.AccountOutboxRepository;
 import dev.junyoung.exchange.accountservice.application.port.out.AccountRepository;
 import dev.junyoung.exchange.accountservice.application.port.out.AssetRepository;
 import dev.junyoung.exchange.accountservice.application.port.out.BalanceRepository;
 import dev.junyoung.exchange.accountservice.application.port.out.LedgerEntryRepository;
 import dev.junyoung.exchange.accountservice.application.port.out.ReservationRepository;
+import dev.junyoung.exchange.accountservice.application.service.outbox.AccountOutboxFactory;
 import dev.junyoung.exchange.accountservice.domain.exception.AccountStateConflictException;
 import dev.junyoung.exchange.accountservice.domain.model.LedgerEntryFactory;
 import dev.junyoung.exchange.accountservice.domain.model.entity.Account;
@@ -41,6 +43,8 @@ public class ReserveBalanceService implements ReserveBalanceUseCase {
     private final BalanceRepository balanceRepository;
     private final ReservationRepository reservationRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
+    private final AccountOutboxRepository accountOutboxRepository;
+    private final AccountOutboxFactory accountOutboxFactory;
 
     @Override
     public void reserve(ReserveBalanceCommand command) {
@@ -56,6 +60,7 @@ public class ReserveBalanceService implements ReserveBalanceUseCase {
         reserveBalance(command.accountId(), command.assetCode(), command.amount());
         saveBalanceReservation(command);
         saveLedgerEntries(command);
+        accountOutboxRepository.save(accountOutboxFactory.reserved(command));
     }
 
     /**

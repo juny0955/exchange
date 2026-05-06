@@ -1,14 +1,14 @@
-package dev.junyoung.exchange.accountservice.adapter.out.persistence.engine;
+package dev.junyoung.exchange.accountservice.adapter.out.persistence.event;
 
 import dev.junyoung.exchange.accountservice.Tables;
-import dev.junyoung.exchange.accountservice.domain.model.entity.EngineFailedEvent;
-import dev.junyoung.exchange.accountservice.tables.records.EngineFailedEventRecord;
+import dev.junyoung.exchange.accountservice.domain.model.entity.ConsumerFailedEvent;
+import dev.junyoung.exchange.accountservice.tables.records.ConsumerFailedEventsRecord;
 import org.jooq.DSLContext;
 import org.jooq.JSON;
 
-public final class JooqEngineFailedEventMapper {
-    public static EngineFailedEventRecord toRecord(DSLContext dslContext, EngineFailedEvent event) {
-        EngineFailedEventRecord record = dslContext.newRecord(Tables.ENGINE_FAILED_EVENT);
+public final class JooqConsumerFailedEventMapper {
+    public static ConsumerFailedEventsRecord toRecord(DSLContext dslContext, ConsumerFailedEvent event) {
+        ConsumerFailedEventsRecord record = dslContext.newRecord(Tables.CONSUMER_FAILED_EVENTS);
         record.setTopic(event.getTopic());
         record.setPartition(event.getPartition());
         record.setEventOffset(event.getOffset());
