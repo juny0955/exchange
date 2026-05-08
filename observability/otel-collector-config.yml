@@ -13,7 +13,6 @@ processors:
 exporters:
   prometheus:
     endpoint: 0.0.0.0:8889
-    namespace: exchange
 
   otlp_grpc/tempo:
     endpoint: tempo:4317
