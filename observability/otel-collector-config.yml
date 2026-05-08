@@ -3,6 +3,8 @@ receivers:
     protocols:
       grpc:
         endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
 
 processors:
   batch:
@@ -13,13 +15,13 @@ exporters:
     endpoint: 0.0.0.0:8889
     namespace: exchange
 
-  otlp/tempo:
+  otlp_grpc/tempo:
     endpoint: tempo:4317
     tls:
       insecure: true
 
-  otlp/loki:
-    endpoint: loki:9095
+  otlp_http/loki:
+    endpoint: http://loki:3100/otlp
     tls:
       insecure: true
 
@@ -32,8 +34,8 @@ service:
     traces:
       receivers: [ otlp ]
       processors: [ batch ]
-      exporters: [ otlp/tempo ]
+      exporters: [ otlp_grpc/tempo ]
     logs:
       receivers: [ otlp ]
       processors: [ batch ]
-      exporters: [ otlp/loki ]
+      exporters: [ otlp_http/loki ]
