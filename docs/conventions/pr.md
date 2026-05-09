@@ -1,4 +1,5 @@
 # Pull Request Convention
+Base Branch: `develop`
 
 ## Title Format
 `[Type] PR 요약 (#IssueNumber)` (예: `[Feat] 주문 취소 로직 구현 (#15)`)
