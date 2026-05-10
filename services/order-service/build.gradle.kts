@@ -23,7 +23,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     implementation("io.micrometer:micrometer-registry-otlp")
-    implementation("com.github.loki4j:loki-logback-appender:2.0.3")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.27.0-alpha")
 
 
     compileOnly("org.projectlombok:lombok")
