@@ -1,11 +1,7 @@
 package dev.junyoung.exchange.coreweb.exception;
 
-import dev.junyoung.exchange.core.exception.application.ApplicationException;
-import dev.junyoung.exchange.core.exception.infrastructure.InfrastructureException;
-import dev.junyoung.exchange.core.exception.domain.DomainConflictException;
-import dev.junyoung.exchange.core.exception.domain.DomainInvalidException;
-import dev.junyoung.exchange.coreweb.MdcKeys;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +9,11 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.List;
+import dev.junyoung.exchange.core.exception.application.ApplicationException;
+import dev.junyoung.exchange.core.exception.domain.DomainConflictException;
+import dev.junyoung.exchange.core.exception.domain.DomainInvalidException;
+import dev.junyoung.exchange.core.exception.infrastructure.InfrastructureException;
+import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
 @Slf4j
@@ -73,6 +73,6 @@ public class GlobalExceptionHandler {
     }
 
     private String traceId() {
-        return MDC.get(MdcKeys.TRACE_ID);
+        return MDC.get("traceId"); // OTel 표준 키
     }
 }

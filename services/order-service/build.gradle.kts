@@ -20,6 +20,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.grpc:spring-grpc-client-spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-kafka")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
+    implementation("io.micrometer:micrometer-registry-otlp")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.27.0-alpha")
+
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
