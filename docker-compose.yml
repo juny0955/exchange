@@ -91,9 +91,9 @@ services:
       prometheus:
         condition: service_healthy
       loki:
-        condition: service_healthy
+        condition: service_started
       tempo:
-        condition: service_healthy
+        condition: service_started
     networks:
       - observability-network
 
@@ -110,6 +110,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 30s
     networks:
       - observability-network
 
@@ -122,11 +123,6 @@ services:
     ports:
       - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
-    healthcheck:
-      test: [ "CMD", "wget", "--tries=1", "--spider", "http://localhost:3100/ready" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
     networks:
       - observability-network
 
@@ -139,11 +135,6 @@ services:
       - tempo-data:/var/tempo
     ports:
       - "3200:3200"
-    healthcheck:
-      test: [ "CMD", "wget", "--tries=1", "--spider", "http://localhost:3200/ready" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
     networks:
       - observability-network
 
