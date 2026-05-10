@@ -21,3 +21,8 @@ tracing-subscriber = { version = "0.3.23", features = [
     "fmt",
 ] }
 chrono = { version = "0.4.44", features = ["serde"] }
+opentelemetry = { version = "0.32.0", features = ["trace", "metrics"] }
+opentelemetry_sdk = { version = "0.32.0", features = ["trace", "metrics"] }
+opentelemetry-otlp = { version = "0.32.0", features = ["http-proto", "reqwest-blocking-client", "metrics"] }
+tracing-opentelemetry = "0.32.1"
+opentelemetry-appender-tracing = "0.32.0"
