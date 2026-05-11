@@ -30,9 +30,9 @@ struct OtelGuard {
 
 impl Drop for OtelGuard {
     fn drop(&mut self) {
+        let _ = self.meter_provider.shutdown();
         let _ = self.tracer_provider.shutdown();
         let _ = self.logger_provider.shutdown();
-        let _ = self.meter_provider.shutdown();
     }
 }
 
