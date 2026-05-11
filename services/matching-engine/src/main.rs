@@ -78,7 +78,7 @@ fn init_otel() -> OtelGuard {
         .expect("SpanExporter 생성 실패");
     let tracer_provider = SdkTracerProvider::builder()
         .with_resource(resource.clone())
-        .with_simple_exporter(span_exporter)
+        .with_batch_exporter(span_exporter)
         .build();
     global::set_tracer_provider(tracer_provider.clone());
 
@@ -89,7 +89,7 @@ fn init_otel() -> OtelGuard {
         .expect("LogExporter 생성 실패");
     let logger_provider = SdkLoggerProvider::builder()
         .with_resource(resource.clone())
-        .with_simple_exporter(log_exporter)
+        .with_batch_exporter(log_exporter)
         .build();
 
     let meter_exporter = MetricExporter::builder()
