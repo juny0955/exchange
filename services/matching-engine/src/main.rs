@@ -4,16 +4,40 @@ use matching_engine::{
     engine::{EngineEvent, EngineManager},
     models::Symbol,
 };
+use opentelemetry::trace::TracerProvider;
+use opentelemetry::{KeyValue, global};
+use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
+use opentelemetry_otlp::{LogExporter, MetricExporter, SpanExporter};
+use opentelemetry_sdk::Resource;
+use opentelemetry_sdk::logs::SdkLoggerProvider;
+use opentelemetry_sdk::metrics::SdkMeterProvider;
+use opentelemetry_sdk::trace::SdkTracerProvider;
 use std::io::{IsTerminal, stdout};
 use std::process::exit;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use tracing::error;
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{EnvFilter, Layer};
+
+struct OtelGuard {
+    tracer_provider: SdkTracerProvider,
+    logger_provider: SdkLoggerProvider,
+    meter_provider: SdkMeterProvider,
+}
+
+impl Drop for OtelGuard {
+    fn drop(&mut self) {
+        let _ = self.meter_provider.shutdown();
+        let _ = self.tracer_provider.shutdown();
+        let _ = self.logger_provider.shutdown();
+    }
+}
 
 fn main() {
-    init_tracing();
+    let _otel_guard = init_otel();
     let kafka_config = init_kafka_config();
     let (event_sender, event_receiver) = channel::unbounded::<EngineEvent>();
     let manager = init_engine_manager(event_sender);
@@ -40,23 +64,70 @@ fn main() {
     });
 }
 
-fn init_tracing() {
-    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+fn init_otel() -> OtelGuard {
+    let resource = Resource::builder()
+        .with_attribute(KeyValue::new("service.name", "matching-engine"))
+        .build();
 
+    // trace 설정
+    let span_exporter = SpanExporter::builder()
+        .with_http()
+        .build()
+        .expect("SpanExporter 생성 실패");
+    let tracer_provider = SdkTracerProvider::builder()
+        .with_resource(resource.clone())
+        .with_batch_exporter(span_exporter)
+        .build();
+    global::set_tracer_provider(tracer_provider.clone());
+
+    // log 설정
+    let log_exporter = LogExporter::builder()
+        .with_http()
+        .build()
+        .expect("LogExporter 생성 실패");
+    let logger_provider = SdkLoggerProvider::builder()
+        .with_resource(resource.clone())
+        .with_batch_exporter(log_exporter)
+        .build();
+
+    // metric 설정
+    let meter_exporter = MetricExporter::builder()
+        .with_http()
+        .build()
+        .expect("MetricExporter 생성 실패");
+    let meter_provider = SdkMeterProvider::builder()
+        .with_resource(resource.clone())
+        .with_periodic_exporter(meter_exporter)
+        .build();
+    global::set_meter_provider(meter_provider.clone());
+
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
     let json = std::env::var("LOG_FORMAT")
         .map(|v| v.eq_ignore_ascii_case("json"))
         .unwrap_or(false);
 
-    if json {
-        tracing_subscriber::fmt()
-            .json()
-            .with_env_filter(filter)
-            .init();
+    let tracer = tracer_provider.tracer("matching-engine");
+
+    let fmt_layer = tracing_subscriber::fmt::layer();
+    let fmt_layer = if json {
+        fmt_layer.json().boxed()
     } else {
-        tracing_subscriber::fmt()
-            .with_env_filter(filter)
+        fmt_layer
             .with_ansi(IsTerminal::is_terminal(&stdout()))
-            .init();
+            .boxed()
+    };
+
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(fmt_layer)
+        .with(tracing_opentelemetry::layer().with_tracer(tracer))
+        .with(OpenTelemetryTracingBridge::new(&logger_provider))
+        .init();
+
+    OtelGuard {
+        tracer_provider,
+        logger_provider,
+        meter_provider,
     }
 }
 
