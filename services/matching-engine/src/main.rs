@@ -4,10 +4,11 @@ use matching_engine::{
     engine::{EngineEvent, EngineManager},
     models::Symbol,
 };
-use opentelemetry::global;
 use opentelemetry::trace::TracerProvider;
+use opentelemetry::{KeyValue, global};
 use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
 use opentelemetry_otlp::{LogExporter, MetricExporter, SpanExporter, WithExportConfig};
+use opentelemetry_sdk::Resource;
 use opentelemetry_sdk::logs::SdkLoggerProvider;
 use opentelemetry_sdk::metrics::SdkMeterProvider;
 use opentelemetry_sdk::trace::SdkTracerProvider;
@@ -66,6 +67,9 @@ fn main() {
 fn init_otel() -> OtelGuard {
     let endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
         .unwrap_or_else(|_| "http://localhost:4318".to_string());
+    let resource = Resource::builder_empty()
+        .with_attribute(KeyValue::new("service.name", "matching-engine"))
+        .build();
 
     let span_exporter = SpanExporter::builder()
         .with_http()
@@ -73,6 +77,7 @@ fn init_otel() -> OtelGuard {
         .build()
         .expect("SpanExporter 생성 실패");
     let tracer_provider = SdkTracerProvider::builder()
+        .with_resource(resource.clone())
         .with_simple_exporter(span_exporter)
         .build();
     global::set_tracer_provider(tracer_provider.clone());
@@ -83,6 +88,7 @@ fn init_otel() -> OtelGuard {
         .build()
         .expect("LogExporter 생성 실패");
     let logger_provider = SdkLoggerProvider::builder()
+        .with_resource(resource.clone())
         .with_simple_exporter(log_exporter)
         .build();
 
@@ -92,6 +98,7 @@ fn init_otel() -> OtelGuard {
         .build()
         .expect("MetricExporter 생성 실패");
     let meter_provider = SdkMeterProvider::builder()
+        .with_resource(resource.clone())
         .with_periodic_exporter(meter_exporter)
         .build();
     global::set_meter_provider(meter_provider.clone());
