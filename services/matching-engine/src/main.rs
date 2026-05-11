@@ -67,7 +67,7 @@ fn main() {
 fn init_otel() -> OtelGuard {
     let endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
         .unwrap_or_else(|_| "http://localhost:4318".to_string());
-    let resource = Resource::builder_empty()
+    let resource = Resource::builder()
         .with_attribute(KeyValue::new("service.name", "matching-engine"))
         .build();
 
