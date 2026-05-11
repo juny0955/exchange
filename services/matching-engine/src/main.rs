@@ -18,9 +18,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use tracing::error;
-use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{EnvFilter, Layer};
 
 struct OtelGuard {
     tracer_provider: SdkTracerProvider,
@@ -110,21 +110,21 @@ fn init_otel() -> OtelGuard {
 
     let tracer = tracer_provider.tracer("matching-engine");
 
-    if json {
-        tracing_subscriber::registry()
-            .with(filter)
-            .with(tracing_subscriber::fmt::layer().json())
-            .with(tracing_opentelemetry::layer().with_tracer(tracer))
-            .with(OpenTelemetryTracingBridge::new(&logger_provider))
-            .init();
+    let fmt_layer = tracing_subscriber::fmt::layer();
+    let fmt_layer = if json {
+        fmt_layer.json().boxed()
     } else {
-        tracing_subscriber::registry()
-            .with(filter)
-            .with(tracing_subscriber::fmt::layer().with_ansi(IsTerminal::is_terminal(&stdout())))
-            .with(tracing_opentelemetry::layer().with_tracer(tracer))
-            .with(OpenTelemetryTracingBridge::new(&logger_provider))
-            .init();
-    }
+        fmt_layer
+            .with_ansi(IsTerminal::is_terminal(&stdout()))
+            .boxed()
+    };
+
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(fmt_layer)
+        .with(tracing_opentelemetry::layer().with_tracer(tracer))
+        .with(OpenTelemetryTracingBridge::new(&logger_provider))
+        .init();
 
     OtelGuard {
         tracer_provider,
