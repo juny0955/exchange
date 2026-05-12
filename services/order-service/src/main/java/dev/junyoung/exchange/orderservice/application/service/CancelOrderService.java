@@ -11,13 +11,16 @@ import dev.junyoung.exchange.orderservice.domain.model.entity.Order;
 import dev.junyoung.exchange.orderservice.domain.model.entity.OrderHistory;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderHisReason;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class CancelOrderService implements CancelOrderUseCase {
 
     private final OrderRepository orderRepository;
@@ -26,6 +29,7 @@ public class CancelOrderService implements CancelOrderUseCase {
     private final OrderOutboxFactory orderOutboxFactory;
 
     @Override
+    @NewSpan("order.cancel")
     public void cancelOrder(CancelOrderCommand command) {
         Order order = orderRepository.findByIdAndAccountIdForUpdate(command.orderId(), command.accountId())
             .orElseThrow(OrderNotFoundException::new);
@@ -36,5 +40,8 @@ public class CancelOrderService implements CancelOrderUseCase {
         orderRepository.updateStatus(order);
         orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.USER_REQUEST_CANCEL));
         orderOutboxRepository.save(orderOutboxFactory.cancelOrder(order));
+
+        log.info("[CANCEL_ORDER] 주문 취소 요청 완료. orderId={}, fromStatus={}",
+            order.getOrderId().value(), fromStatus);
     }
 }

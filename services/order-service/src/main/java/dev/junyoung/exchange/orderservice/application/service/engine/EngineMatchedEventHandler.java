@@ -24,6 +24,7 @@ import dev.junyoung.exchange.orderservice.domain.model.enums.OrderHisReason;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import dev.junyoung.exchange.orderservice.domain.model.value.TradeId;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,6 +39,7 @@ public class EngineMatchedEventHandler implements HandleEngineMatchedEventUseCas
 	private final TradeRepository tradeRepository;
 
 	@Override
+	@NewSpan("order.engine.matched")
 	public void handle(List<EngineMatchedCommand> commands) {
 		if (commands.isEmpty()) return;
 
@@ -51,6 +53,8 @@ public class EngineMatchedEventHandler implements HandleEngineMatchedEventUseCas
 		tradeRepository.saveAll(result.trades());
 		orderRepository.updateFill(List.copyOf(orderMap.values()));
 		orderHistoryRepository.saveAll(result.histories());
+
+		log.info("[ENGINE_MATCHED] 매칭 처리 완료. count={}", newCommands.size());
 	}
 
 	private List<EngineMatchedCommand> filterDuplicate(List<EngineMatchedCommand> commands) {
