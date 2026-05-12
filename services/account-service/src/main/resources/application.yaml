@@ -11,10 +11,6 @@ spring:
   jooq:
     sql-dialect: POSTGRES
 
-  grpc:
-    server:
-      port: 9090
-
   kafka:
     bootstrap-servers: localhost:9092
     consumer:

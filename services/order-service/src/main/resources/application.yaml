@@ -63,9 +63,3 @@ management:
 logging:
   pattern:
     level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
-
-#  grpc:
-#    client:
-#      default-channel:
-#        address: static://localhost:9090 # mock
-#        negotiation-type: plaintext

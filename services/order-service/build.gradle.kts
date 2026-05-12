@@ -8,7 +8,6 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     id("org.jooq.jooq-codegen-gradle") version "3.19.30"
 }
-val springGrpcVersion by extra("1.0.2")
 
 description = "order-service"
 
@@ -16,9 +15,7 @@ val jooqGeneratedDir = layout.buildDirectory.dir("generated-src/jooq/main")
 
 dependencies {
     implementation(project(":libs:core-web"))
-    implementation(project(":libs:proto")) // NOTE: 현재 grpc 사용하지않지만 추후 사용 가능있기에 남겨둠
     implementation("org.springframework.boot:spring-boot-starter-jooq")
-    implementation("org.springframework.grpc:spring-grpc-client-spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-kafka")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
@@ -84,8 +81,3 @@ tasks.named("compileJava") {
 
 
 tasks.register("prepareKotlinBuildScriptModel"){}
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.grpc:spring-grpc-dependencies:$springGrpcVersion")
-    }
-}
