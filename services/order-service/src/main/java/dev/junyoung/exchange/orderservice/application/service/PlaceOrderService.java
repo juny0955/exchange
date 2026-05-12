@@ -16,11 +16,17 @@ import dev.junyoung.exchange.orderservice.domain.model.entity.OrderHistory;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
 import dev.junyoung.exchange.orderservice.domain.service.AssetReserveCalculator;
 import dev.junyoung.exchange.orderservice.domain.service.dto.AssetReserveResult;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class PlaceOrderService implements PlaceOrderUseCase {
 
 	private final AcceptedSeqGenerator acceptedSeqGenerator;
@@ -28,9 +34,13 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 	private final OrderHistoryRepository orderHistoryRepository;
 	private final OrderOutboxFactory orderOutboxFactory;
 	private final OrderOutboxRepository orderOutboxRepository;
+	private final MeterRegistry meterRegistry;
 
 	@Override
+	@NewSpan("order.place")
 	public OrderId placeOrder(PlaceOrderCommand command) {
+		Timer.Sample sample = Timer.start(meterRegistry);
+
 		/*
 		TODO race condition issue
 		 DB uk 제약조건으로 막히긴 하지만 정리할 필요 있음
@@ -57,6 +67,24 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 
 		AssetReserveResult calculate = AssetReserveCalculator.calculate(order);
 		orderOutboxRepository.save(orderOutboxFactory.reserveOrder(order, calculate));
+
+		String ticker = command.symbol().getTicker();
+		String side = command.side().name();
+
+		Counter.builder("order.created")
+			.tag("symbol", ticker)
+			.tag("side", side)
+			.register(meterRegistry)
+			.increment();
+
+		sample.stop(Timer.builder("order.place.duration")
+			.tag("symbol", ticker)
+			.tag("side", side)
+			.register(meterRegistry));
+
+		log.info("[PLACE_ORDER] 주문 생성 완료. orderId={}, symbol={}, side={}",
+			order.getOrderId().value(), ticker, side);
+
 		return order.getOrderId();
 	}
 }
