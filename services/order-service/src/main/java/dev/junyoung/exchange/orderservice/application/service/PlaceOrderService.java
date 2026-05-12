@@ -22,6 +22,8 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -71,16 +73,21 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 		String ticker = command.symbol().getTicker();
 		String side = command.side().name();
 
-		Counter.builder("order.created")
-			.tag("symbol", ticker)
-			.tag("side", side)
-			.register(meterRegistry)
-			.increment();
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				Counter.builder("order.created")
+					.tag("symbol", ticker)
+					.tag("side", side)
+					.register(meterRegistry)
+					.increment();
 
-		sample.stop(Timer.builder("order.place.duration")
-			.tag("symbol", ticker)
-			.tag("side", side)
-			.register(meterRegistry));
+				sample.stop(Timer.builder("order.place.duration")
+					.tag("symbol", ticker)
+					.tag("side", side)
+					.register(meterRegistry));
+			}
+		});
 
 		log.info("[PLACE_ORDER] 주문 생성 완료. orderId={}, symbol={}, side={}",
 			order.getOrderId().value(), ticker, side);
