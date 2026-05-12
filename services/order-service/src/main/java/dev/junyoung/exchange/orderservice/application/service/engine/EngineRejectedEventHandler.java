@@ -14,6 +14,7 @@ import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
 import dev.junyoung.exchange.orderservice.domain.model.enums.EngineRejectReason;
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,6 +28,7 @@ public class EngineRejectedEventHandler implements HandleEngineRejectedEventUseC
 	private final OrderHistoryRepository orderHistoryRepository;
 
 	@Override
+	@NewSpan("order.engine.rejected")
 	public void handle(OrderId orderId, AccountId accountId, EngineRejectReason reason) {
 		Order order = orderRepository.findByIdAndAccountIdForUpdate(orderId, accountId)
 			.orElseThrow(OrderNotFoundException::new);
@@ -39,6 +41,7 @@ public class EngineRejectedEventHandler implements HandleEngineRejectedEventUseC
 
 			orderRepository.updateStatus(order);
 			orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.ENGINE_REJECTED, reason.name()));
+			log.info("[ENGINE_REJECTED] 주문 엔진 거부 완료. orderId={}, reason={}", orderId.value(), reason);
 			return;
 		}
 

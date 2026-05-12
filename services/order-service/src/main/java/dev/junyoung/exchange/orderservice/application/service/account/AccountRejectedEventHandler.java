@@ -14,6 +14,7 @@ import dev.junyoung.exchange.orderservice.domain.model.enums.OrderHisReason;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,6 +28,7 @@ public class AccountRejectedEventHandler implements HandleAccountRejectedEvent {
 	private final OrderHistoryRepository orderHistoryRepository;
 
 	@Override
+	@NewSpan("order.account.rejected")
 	public void handle(OrderId orderId, AccountId accountId, AccountRejectReason reason) {
 		Order order = orderRepository.findByIdAndAccountIdForUpdate(orderId, accountId)
 			.orElseThrow(OrderNotFoundException::new);
@@ -39,6 +41,7 @@ public class AccountRejectedEventHandler implements HandleAccountRejectedEvent {
 
 			orderRepository.updateStatus(order);
 			orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.ACCOUNT_REJECTED, reason.name()));
+			log.info("[ACCOUNT_REJECTED] 주문 거부 완료. orderId={}, reason={}", orderId.value(), reason);
 			return;
 		}
 

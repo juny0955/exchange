@@ -14,6 +14,7 @@ import dev.junyoung.exchange.orderservice.domain.model.enums.OrderHisReason;
 import dev.junyoung.exchange.orderservice.domain.model.enums.OrderStatus;
 import dev.junyoung.exchange.orderservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.orderservice.domain.model.value.OrderId;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,6 +28,7 @@ public class EngineCanceledEventHandler implements HandleEngineCanceledEventUseC
 	private final OrderHistoryRepository orderHistoryRepository;
 
 	@Override
+	@NewSpan("order.engine.canceled")
 	public void handle(OrderId orderId, AccountId accountId, CancelReason reason) {
 		Order order = orderRepository.findByIdAndAccountIdForUpdate(orderId, accountId)
 			.orElseThrow(OrderNotFoundException::new);
@@ -39,6 +41,7 @@ public class EngineCanceledEventHandler implements HandleEngineCanceledEventUseC
 
 			orderRepository.updateStatus(order);
 			orderHistoryRepository.save(OrderHistory.createTransition(order, fromStatus, OrderHisReason.ENGINE_CANCELED, reason.name()));
+			log.info("[ENGINE_CANCELED] 주문 취소 완료. orderId={}, reason={}", orderId.value(), reason);
 			return;
 		}
 
