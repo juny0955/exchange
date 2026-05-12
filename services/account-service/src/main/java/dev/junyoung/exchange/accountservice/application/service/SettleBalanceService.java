@@ -11,7 +11,9 @@ import dev.junyoung.exchange.accountservice.domain.model.entity.LedgerEntry;
 import dev.junyoung.exchange.accountservice.domain.model.entity.Reservation;
 import dev.junyoung.exchange.accountservice.domain.model.enums.ReferenceType;
 import dev.junyoung.exchange.accountservice.domain.model.value.AssetCode;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ import java.util.stream.Stream;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class SettleBalanceService implements SettleBalanceUseCase {
 
     private final BalanceRepository balanceRepository;
@@ -31,6 +34,7 @@ public class SettleBalanceService implements SettleBalanceUseCase {
     private final LedgerEntryRepository ledgerEntryRepository;
 
     @Override
+    @NewSpan("account.settle")
     public void settle(List<SettleBalanceCommand> commands) {
         if (commands.isEmpty()) return;
 
@@ -47,6 +51,8 @@ public class SettleBalanceService implements SettleBalanceUseCase {
         reservationRepository.updateAll(new ArrayList<>(reservations.values()));
         balanceRepository.upsertAll(new ArrayList<>(balances.values()));
         ledgerEntryRepository.saveAll(ledgerEntries);
+
+        log.info("[SETTLE_BALANCE] 잔고 정산 완료. count={}", commands.size());
     }
 
     private Map<ReservationLockKey, Reservation> loadReservations(List<SettleBalanceCommand> commands) {
