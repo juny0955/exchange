@@ -15,11 +15,14 @@ import dev.junyoung.exchange.accountservice.application.port.out.ReservationRepo
 import dev.junyoung.exchange.accountservice.domain.model.LedgerEntryFactory;
 import dev.junyoung.exchange.accountservice.domain.model.entity.Balance;
 import dev.junyoung.exchange.accountservice.domain.model.entity.Reservation;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ReleaseBalanceService implements ReleaseBalanceUseCase {
 
     private final BalanceRepository balanceRepository;
@@ -27,6 +30,7 @@ public class ReleaseBalanceService implements ReleaseBalanceUseCase {
     private final LedgerEntryRepository ledgerEntryRepository;
 
     @Override
+    @NewSpan("account.release")
     public void release(ReleaseBalanceCommand command) {
         Reservation reservation = reservationRepository.findByOrderIdAndAccountIdForUpdate(command.orderId(), command.accountId())
             .orElseThrow(ReservationNotFoundException::new);
@@ -49,5 +53,8 @@ public class ReleaseBalanceService implements ReleaseBalanceUseCase {
                 command.orderId()
             )
         );
+
+        log.info("[RELEASE_BALANCE] 잔고 환불 완료. orderId={}, accountId={}",
+            command.orderId().value(), command.accountId().value());
     }
 }

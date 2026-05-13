@@ -29,8 +29,14 @@ import dev.junyoung.exchange.accountservice.domain.model.entity.LedgerEntry;
 import dev.junyoung.exchange.accountservice.domain.model.entity.Reservation;
 import dev.junyoung.exchange.accountservice.domain.model.value.AccountId;
 import dev.junyoung.exchange.accountservice.domain.model.value.AssetCode;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @Transactional
@@ -45,9 +51,13 @@ public class ReserveBalanceService implements ReserveBalanceUseCase {
     private final LedgerEntryRepository ledgerEntryRepository;
     private final AccountOutboxRepository accountOutboxRepository;
     private final AccountOutboxFactory accountOutboxFactory;
+    private final MeterRegistry meterRegistry;
 
     @Override
+    @NewSpan("account.reserve")
     public void reserve(ReserveBalanceCommand command) {
+        Timer.Sample sample = Timer.start(meterRegistry);
+
         if (reservationRepository.existsOrderIdAndAccountId(command.orderId(), command.accountId())) {
             log.debug("[ACCOUNT_RESERVED: duplicate] 이미 처리된 예약 메세지 orderId={}, accountId={}",
                 command.orderId().value(), command.accountId().value());
@@ -61,6 +71,24 @@ public class ReserveBalanceService implements ReserveBalanceUseCase {
         saveBalanceReservation(command);
         saveLedgerEntries(command);
         accountOutboxRepository.save(accountOutboxFactory.reserved(command));
+
+        String assetCode = command.assetCode().value();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                Counter.builder("account.reserve.success")
+                    .tag("asset", assetCode)
+                    .register(meterRegistry)
+                    .increment();
+
+                sample.stop(Timer.builder("account.reserve.duration")
+                    .tag("asset", assetCode)
+                    .register(meterRegistry));
+            }
+        });
+
+        log.info("[RESERVE_BALANCE] 잔고 예약 완료. orderId={}, accountId={}, asset={}",
+            command.orderId().value(), command.accountId().value(), assetCode);
     }
 
     /**
